@@ -12,21 +12,17 @@ class Agent:
     def evaluate_fitness(self, env):
         l_t, a_t = self.team.evaluate(env.current_state)
         t = 0
-        t_max = 100  # change this...
+        t_max = 30
         total_reward = 0
-
+        seq = [{'learner': l_t, 'action': a_t}]
+        states = [env.current_state]
         while t < t_max:
             s_next, reward, isDone = env.step(a_t)
+            states.append(env.current_state)
             total_reward += reward
             if isDone:
                 self.team.final_update(l_t, a_t, reward)
-                # print(self.team.q_table)
-                print('winner!! start')
-                for q_value in self.team.q_table:
-                    print(str(q_value['learner']) + ' ' + str(q_value['action']) + ' ' + str(q_value['q']))
-                print('winner!! end')
-                return total_reward, True
-
+                return total_reward, True, states, seq
             l_next, a_next = self.team.evaluate(env.current_state)
 
             if l_t.id != l_next.id:
@@ -34,36 +30,26 @@ class Agent:
 
             a_t = a_next
             l_t = l_next
+            seq.append({'learner': l_t, 'action': a_t})
             t = t + 1
-        return total_reward, False
+        return total_reward, False, states, seq
 
     def replay(self, env):
-        # print('agent state ----------------------------')
-        # for q_value in self.team.q_table:
-        #     print(str(q_value['learner']) + ' ' + str(q_value['action']) + ' ' + str(q_value['q']))
-        # print('agent, do yo thing ----------------------------')
         l_t, a_t = self.team.evaluate(env.current_state)
         t = 0
-        t_max = 100  # change this...
+        t_max = 50  # change this...
         total_reward = 0
-        states = []  # return the states visited during replay
-        states.append(env.current_state)
+        states = [env.current_state]  # return the states visited during replay
 
         while t < t_max:
             s_next, reward, isDone = env.step(a_t)
             states.append(s_next)
             total_reward += reward
             if isDone:
-                # for q_value in self.team.q_table:
-                #     print(str(q_value['learner']) + ' ' + str(q_value['action']) + ' ' + str(q_value['q']))
-                # print('agent end ----------------------------')
                 return total_reward, True, states
 
             l_next, a_next = self.team.evaluate(env.current_state)
 
             a_t = a_next
             t = t + 1
-        # for q_value in self.team.q_table:
-        #     print(str(q_value['learner']) + ' ' + str(q_value['action']) + ' ' + str(q_value['q']))
-        # print('agent end ----------------------------')
         return total_reward, False, states

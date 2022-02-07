@@ -2,11 +2,14 @@ import uuid
 import random
 from .agent import Agent
 from .team import Team
+from .learner import Learner
 
 
 class Trainer:
 
     def __init__(self, gap, numLearners, numAgents, alpha, discount, epsilon):
+        self.learnerPopulationSize = 20
+        self.learnerPopulation = []
         self.agents = []
         self.gap = gap # percentage of teams we'll select to evolve
         self.numLearners = numLearners
@@ -16,12 +19,19 @@ class Trainer:
         self.epsilon = epsilon
 
     def createInitAgents(self) -> None:
+        self.generateLearnerPopulation()
         for i in range(self.numAgents):
             team = Team(uuid.uuid4(), self.numLearners, self.alpha, self.discount, self.epsilon)
-            team.createInitLearners()
+            # team.createInitLearners()
+            team.sampleLearners(self.learnerPopulation)
             team.createInitQTable()
             agent = Agent(uuid.uuid4(), team)
             self.agents.append(agent)
+
+    def generateLearnerPopulation(self) -> None:
+        for i in range(self.learnerPopulationSize):
+            learner = Learner(uuid.uuid4())
+            self.learnerPopulation.append(learner)
 
     def evolve(self) -> None:
         self.generate(self.select())
@@ -31,7 +41,8 @@ class Trainer:
         rankedAgents = sorted(self.agents, key=lambda ag: ag.fitness, reverse=True)
         numKeep = len(self.agents) - int(len(self.agents)*self.gap)
 
-        wheel = rankedAgents[numKeep:]
+        # wheel = rankedAgents[numKeep:]
+        wheel = rankedAgents[:numKeep] # verify which is right...
         return wheel
 
     # perform roulette wheel, not really a wheel for now...

@@ -1,5 +1,6 @@
 import random
 import uuid
+
 from .learner import Learner
 
 
@@ -8,15 +9,20 @@ class Team:
         self.id = id
         self.learners = []
         self.q_table = []
-        self.numLeaners = numLearners
+        self.numLearners = numLearners
         self.alpha = alpha
         self.discount = discount
         self.epsilon = epsilon
 
     def createInitLearners(self):
-        for i in range(self.numLeaners):
+        for i in range(self.numLearners):
             learner = Learner(uuid.uuid4())
             self.learners.append(learner)
+
+    def sampleLearners(self, learners):
+        for i in range(self.numLearners):
+            sample = random.randint(0, len(learners) - 1)
+            self.learners.append(learners[sample])
 
     # create q table, assign random actions
     def createInitQTable(self):
@@ -51,14 +57,13 @@ class Team:
 
         e_prob = random.uniform(0, 1)
         if e_prob < self.epsilon:
-            rand_action = random.randint(0, len(actions)-1)
+            rand_action = random.randint(0, len(actions) - 1)
             action = actions[rand_action]
         else:
             action = top_action
         return top_bid, action
 
     def update(self, learner, next_learner, action, reward) -> None:
-        # print(self.q_table)
         # find the greatest q value out of possible actions for learner t+1
         second_max_q = 0
         for second_learner in self.q_table:
@@ -71,7 +76,6 @@ class Team:
             if first_learner['learner'] == str(learner.id) and first_learner['action'] == action:
                 # equation 1 from qtpg pdf
                 first_learner['q'] += self.alpha * (reward + (self.discount * second_max_q) - first_learner['q'])
-        # print(self.q_table)
 
     def final_update(self, learner, action, reward) -> None:
         # find the current learner and q update
@@ -79,3 +83,13 @@ class Team:
             if first_learner['learner'] == str(learner.id) and first_learner['action'] == action:
                 # equation 2 from qtpg pdf
                 first_learner['q'] += self.alpha * (reward - first_learner['q'])
+
+    # get the agent to replay a win a few times in order to properly back prop its q values
+    def victory_lap(self, env, winning_sequence) -> None:
+        for i in range(len(winning_sequence)):
+            _, reward, _ = env.step(winning_sequence[i]['action'])
+            if i != len(winning_sequence) - 1:
+                self.update(winning_sequence[i]['learner'], winning_sequence[i + 1]['learner'],
+                            winning_sequence[i]['action'], reward)
+            else:
+                self.final_update(winning_sequence[i]['learner'], winning_sequence[i]['action'], reward)
