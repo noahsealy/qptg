@@ -1,5 +1,6 @@
 import uuid
 import random
+import numpy as np
 from .rule import Rule
 from .agent import Agent
 from .team import Team
@@ -40,7 +41,9 @@ class Trainer:
     # search
     def generateRules(self, search_space) -> None:
         # init vars
-        rules, prev_rule, region = [], [], []
+        rules, region = [], [0, 0, 0, 0]
+        # init prev_rule, set it all to 0 so nothing gets accidentally hit... but should test this
+        prev_rule = Rule(-1, [0, 0, 0, 0])
 
         # init action selection
         action, prev_action, opposite = random.randint(0, 3), 0, 0
@@ -50,52 +53,85 @@ class Trainer:
             opposite = 3
         elif action == 3:
             opposite = 2
-
+        action=2#remove!
         # find "locked coord"
         # if it is going north or south (0, 1), the "locked" coord is x, so 0
         # else, it will be x, as the x won't change with east or west
-        region[0] = 1
+        region[0] = 0
         if action == 0 or action == 1:
-            region[0] = 0
+            region[0] = 1
 
         state, reward, terminate = search_space.step(action)
         while not terminate:
+            print(state)
+            print(action)
+            print(reward)
+            print(region)
+            print(prev_rule.id)
+            print(prev_rule.region)
             if reward > 0:
+                print('reward was positive')
                 # simulate
-                search_space.step(action)
+                state, reward, terminate = search_space.step(action)
+                print(state)
                 # rule update
+                # the constant axis is the x or y which the searcher successfully starts moving
+                region[1] = search_space.current_state[region[0]]
                 # check if the new step is setting an upper or lower bound
                 # if not, it must be upper bound
-                if state[not region[0]] < region[2]:
-                    region[3] = region[2]
-                    region[2] = state[not region[0]]
+                if search_space.current_state[not region[0]] < region[2]:
+                    # region[3] = region[2] # bug here, we don't always want this to happen....
+                    region[2] = search_space.current_state[not region[0]]
                 else:
-                    region[3] = state[not region[0]]
+                    region[3] = search_space.current_state[not region[0]]
             else:
                 # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
-                if (search_space.current_state[prev_rule.region[0]] == prev_rule.region[1]) and (
-                        search_space.current_state[not prev_rule.region[0]] < prev_rule.region[2] or search_space.current_state[not prev_rule.region[0]] > prev_rule.region[3]):
+                if (search_space.current_state[prev_rule.region[0]] == prev_rule.region[1]) and (search_space.current_state[not prev_rule.region[0]] <= prev_rule.region[2] or search_space.current_state[not prev_rule.region[0]] >= prev_rule.region[3]):
+                    print('reward was negative, in bounds of previous learner')
                     # if the state where backtracking is required is the lower bound
                     if search_space.current_state[not prev_rule.region[0]] == prev_rule.region[2]:
                         # backtrack the region bound, we add here as it is always a lower bound
-                        prev_rule.region[2] = prev_rule.region[2] + 1
-                        # correct the position of the agent
-                        search_space.current_state[not prev_rule.region[0]] = prev_rule.region[2]
+                        if prev_rule.region[2] < 4:
+                            prev_rule.region[2] = prev_rule.region[2] + 1
+                        # correct the position of the agent, tuples are immutable...
+                        if prev_rule.region[0] == 1:
+                            # search_space.current_state = (search_space.current_state[1], prev_rule.region[2])
+                            search_space.current_state = (prev_rule.region[2], search_space.current_state[1])
+                        else:
+                            # search_space.current_state = (prev_rule.region[2], search_space.current_state[0])
+                            search_space.current_state = (search_space.current_state[0], prev_rule.region[2])
                     # OR the backtracking is at the upper bound (region[3])
+                    # coord that we're not keeping constant must equal the upper bound
                     else:
                         # backtrack the region bound, we subtract here as it is always an upper bound
-                        prev_rule.region[3] = prev_rule.region[3] - 1
-                        # correct the position of the agent
-                        search_space.current_state[not prev_rule.region[0]] = prev_rule.region[3]
+                        if prev_rule.region[3] > 0:
+                            prev_rule.region[3] = prev_rule.region[3] - 1
+                        # correct the position of the agent, tuples are immutable...
+                        if prev_rule.region[0] == 1:
+                            # search_space.current_state = (search_space.current_state[1], prev_rule.region[3])
+                            search_space.current_state = (prev_rule.region[3], search_space.current_state[1])
+                            print('curr: ' + str(search_space.current_state))
+                        else:
+                            # search_space.current_state = (prev_rule.region[3], search_space.current_state[0])
+                            search_space.current_state = (search_space.current_state[0], prev_rule.region[3])
+                            print('curr: ' + str(search_space.current_state))
+                    # simulate
+                    state, reward, terminate = search_space.step(action)
                 else:
                     # if the agent is out of the region of the previous rule, we are done with it and can save it
                     self.rules.append(prev_rule)
+                    print('reward was negative, out of bounds of previous learner')
+                    prev_rule = Rule(uuid.uuid4(), region)
+                    region = [0, 0, 0, 0]
                     if action == 0 or action == 1:
                         action = random.randint(2, 3)
+                        region[0] = 0  # 0 is y
+                        # region[1] = prev_rule.region[1]
                     else:
                         action = random.randint(0, 1)
-                    prev_rule = Rule(uuid.uuid4(), region)
-                    region = []
+                        region[0] = 1  # 1 is x
+                        # region[1] = prev_rule.region[1]
+            print('\n\n')
         search_space.reset()
 
     def evolve(self) -> None:
