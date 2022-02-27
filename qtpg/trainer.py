@@ -32,9 +32,12 @@ class Trainer:
 
     def generateLearnerPopulation(self) -> None:
         for i in range(self.learnerPopulationSize):
-            learner = Learner(uuid.uuid4())
+            # give the learner a rule
+            rule = self.rules[random.randint(0, len(self.rules))]
+            learner = Learner(uuid.uuid4(), rule)
             self.learnerPopulation.append(learner)
 
+    # search
     def generateRules(self, search_space) -> None:
         # init vars
         rules, prev_rule, region = [], [], []
@@ -86,13 +89,14 @@ class Trainer:
                         search_space.current_state[not prev_rule.region[0]] = prev_rule.region[3]
                 else:
                     # if the agent is out of the region of the previous rule, we are done with it and can save it
-                    rules.append(prev_rule)
+                    self.rules.append(prev_rule)
                     if action == 0 or action == 1:
                         action = random.randint(2, 3)
                     else:
                         action = random.randint(0, 1)
                     prev_rule = Rule(uuid.uuid4(), region)
                     region = []
+        search_space.reset()
 
     def evolve(self) -> None:
         self.generate(self.select())
