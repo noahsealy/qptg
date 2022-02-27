@@ -9,4 +9,5 @@ class Learner:
         self.program = Program(uuid.uuid4(), 5)
 
     def bid(self, state):
+        # self.program.reroll()
         return self.program.execute(state)

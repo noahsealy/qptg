@@ -46,7 +46,7 @@ class Team:
     def evaluate(self, state):
         top_bid = max(self.learners, key=lambda learner: learner.bid(state))
         actions = []
-        top_q = 0
+        top_q = -100
         top_action = None
         for entry in self.q_table:
             if entry['learner'] == str(top_bid.id):

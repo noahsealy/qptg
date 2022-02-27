@@ -12,7 +12,7 @@ class Agent:
     def evaluate_fitness(self, env):
         l_t, a_t = self.team.evaluate(env.current_state)
         t = 0
-        t_max = 30
+        t_max = 100#30
         total_reward = 0
         seq = [{'learner': l_t, 'action': a_t}]
         states = [env.current_state]
@@ -22,6 +22,8 @@ class Agent:
             total_reward += reward
             if isDone:
                 self.team.final_update(l_t, a_t, reward)
+                for learner in self.team.learners:
+                    learner.program.display()
                 return total_reward, True, states, seq
             l_next, a_next = self.team.evaluate(env.current_state)
 
@@ -32,12 +34,17 @@ class Agent:
             l_t = l_next
             seq.append({'learner': l_t, 'action': a_t})
             t = t + 1
+        # if we are here we did not win...
+        # so, reroll the programs!
+        # this is not right, as it will screw up learners for other teams...
+        for learner in self.team.learners:
+            learner.program.reroll()
         return total_reward, False, states, seq
 
     def replay(self, env):
         l_t, a_t = self.team.evaluate(env.current_state)
         t = 0
-        t_max = 50  # change this...
+        t_max = 100  # change this...
         total_reward = 0
         states = [env.current_state]  # return the states visited during replay
 
