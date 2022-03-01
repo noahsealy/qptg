@@ -35,10 +35,10 @@ class Figure13:
     def step(self, action):
         # north
         if action == 0:
-            next = (self.current_state[0] - 1, self.current_state[1])
+            next = (self.current_state[0] + 1, self.current_state[1])
         # south
         elif action == 1:
-            next = (self.current_state[0] + 1, self.current_state[1])
+            next = (self.current_state[0] - 1, self.current_state[1])
         # east
         elif action == 2:
             next = (self.current_state[0], self.current_state[1] + 1)
@@ -51,28 +51,21 @@ class Figure13:
         # check if move is legal
         if (next[0] >= 0 and next[0] <= (self.rows - 1)) and (next[1] >= 0 and next[1] <= (self.cols - 1)):
             illegal = 0
-            if (next == (2, 0)) or (next == (1, 1)) or (next == (2, 1)) or (next == (1, 3)) or (next == (2, 3)) or (
-                    next == (3, 3)) or (next == (3, 4)):
+            if (next == (2, 0)) or (next == (2, 1)) or (next == (3, 1)) or (next == (1, 3)) or (next == (2, 3)) or (
+                    next == (3, 3)) or (next == (1, 4)):
                 illegal = 1
 
-            if (illegal == 0):
+            if illegal == 0:
                 self.current_state = next
                 reward += self.legal_move
-                # reward -= 0.01
             else:
                 reward += self.illegal_move
-                # reward -= 1
-                # reward = reward
         else:
             reward += self.out_of_bounds
-            # reward -= 1
-            # reward = reward
 
         # punish repeat states within last 20 states
         if self.current_state in self.memory:
             reward += self.memory_repeat
-            # reward -= 1
-            # reward = reward
 
         if self.check_win():
             reward += self.goal_reached
@@ -80,7 +73,7 @@ class Figure13:
 
         # add new state to memory
         if len(self.memory) <= self.memory_limit:
-            (self.memory).append(self.current_state)
+            self.memory.append(self.current_state)
         # after memory is full, begin overriding it
         else:
             if self.memory_position < self.memory_limit:
@@ -90,5 +83,4 @@ class Figure13:
                 self.memory_position = 0
                 self.memory[self.memory_position] = self.current_state
 
-        #         print(self.current_state)
         return self.current_state, reward, terminate
