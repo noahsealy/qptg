@@ -23,18 +23,32 @@ class Trainer:
 
     def createInitAgents(self) -> None:
         self.generateLearnerPopulation()
+        print(len(self.learnerPopulation))
         for i in range(self.numAgents):
             team = Team(uuid.uuid4(), self.numLearners, self.alpha, self.discount, self.epsilon)
-            team.createInitLearners()
-            # team.sampleLearners(self.learnerPopulation)
+            # team.createInitLearners()
+            team.sampleLearners(self.learnerPopulation)
             team.createInitQTable()
             agent = Agent(uuid.uuid4(), team)
             self.agents.append(agent)
+        print('start!')
+        for rule in self.rules:
+            print(rule.id)
+            print(rule.region)
+        print('end!')
 
     def generateLearnerPopulation(self) -> None:
-        for i in range(self.learnerPopulationSize):
+        # for i in range(self.learnerPopulationSize):
+        #     # give the learner a rule
+        #     rule = self.rules[random.randint(0, len(self.rules) - 1)]
+        #     # print(rule.region)
+        #     learner = Learner(uuid.uuid4(), rule)
+        #     self.learnerPopulation.append(learner)
+        print((len(self.rules)))
+        for i in range(len(self.rules)):
             # give the learner a rule
-            rule = self.rules[random.randint(0, len(self.rules))]
+            rule = self.rules[i]
+            # print(rule.region)
             learner = Learner(uuid.uuid4(), rule)
             self.learnerPopulation.append(learner)
 
@@ -54,7 +68,7 @@ class Trainer:
         elif action == 3:
             opposite = 2
         hard_code_count = 0
-        action=2#remove!
+        action = 2  # remove!
         # find "locked coord"
         # if it is going north or south (0, 1), the "locked" coord is x, so 0
         # else, it will be x, as the x won't change with east or west
@@ -65,20 +79,34 @@ class Trainer:
         state, reward, terminate = search_space.step(action)
         index = 0
         while not terminate:
-            print(state)
-            print(action)
-            print(reward)
-            print(region)
-            print(prev_rule.id)
-            print(prev_rule.region)
+            # print(state)
+            # print(action)
+            # print(reward)
+            # print(region)
+            # print(prev_rule.id)
+            # print(prev_rule.region)
             if index != 0:
                 state, reward, terminate = search_space.step(action)
             index += 1
             if reward > 0:
-                print('reward was positive')
-                # simulate
-                # state, reward, terminate = search_space.step(action)
-                print(state)
+                # prune any overlap, by removing the contested cell from the prev
+                # check if there is overlap. If there is, erase it from the prev
+                if region[0] == 0:
+                    lower, upper = (region[1], region[2]), (region[1], region[3])
+                    prev_lower, prev_upper = (prev_rule.region[2], prev_rule.region[1]), (prev_rule.region[3], prev_rule.region[1])
+                    if prev_lower == lower or prev_lower == upper:
+                        prev_rule.region[2] = prev_rule.region[2] + 1
+                    elif prev_upper == lower or prev_upper == upper:
+                        prev_rule.region[3] = prev_rule.region[3] - 1
+
+                if region[0] == 1:
+                    lower, upper = (region[2], region[1]), (region[3], region[1])
+                    prev_lower, prev_upper = (prev_rule.region[1], prev_rule.region[2]), (prev_rule.region[1], prev_rule.region[3])
+                    if prev_lower == lower or prev_lower == upper:
+                        prev_rule.region[2] = prev_rule.region[2] + 1
+                    elif prev_upper == lower or prev_upper == upper:
+                        prev_rule.region[3] = prev_rule.region[3] - 1
+
                 # rule update
                 # the constant axis is the x or y which the searcher successfully starts moving
                 region[1] = search_space.current_state[region[0]]
@@ -91,8 +119,10 @@ class Trainer:
                     region[3] = search_space.current_state[not region[0]]
             else:
                 # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
-                if (search_space.current_state[prev_rule.region[0]] == prev_rule.region[1]) and (search_space.current_state[not prev_rule.region[0]] >= prev_rule.region[2] or search_space.current_state[not prev_rule.region[0]] <= prev_rule.region[3]):
-                    print('reward was negative, in bounds of previous learner')
+                if (search_space.current_state[prev_rule.region[0]] == prev_rule.region[1]) and (
+                        search_space.current_state[not prev_rule.region[0]] >= prev_rule.region[2] or
+                        search_space.current_state[not prev_rule.region[0]] <= prev_rule.region[3]):
+                    # print('reward was negative, in bounds of previous learner')
                     # if the state where backtracking is required is the lower bound
                     if search_space.current_state[not prev_rule.region[0]] == prev_rule.region[2]:
                         # backtrack the region bound, we add here as it is always a lower bound
@@ -102,13 +132,17 @@ class Trainer:
                         if prev_rule.region[0] == 1:
                             # search_space.current_state = (search_space.current_state[1], prev_rule.region[2])
                             new_state = (prev_rule.region[2], search_space.current_state[1])
-                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (new_state != (1, 4)):
+                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                    new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                    new_state != (1, 4)):
                                 search_space.current_state = new_state
                             # search_space.current_state = (prev_rule.region[2], search_space.current_state[1])
                         else:
                             # search_space.current_state = (prev_rule.region[2], search_space.current_state[0])
                             new_state = (search_space.current_state[0], prev_rule.region[2])
-                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (new_state != (1, 4)):
+                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                    new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                    new_state != (1, 4)):
                                 search_space.current_state = new_state
                             # search_space.current_state = (search_space.current_state[0], prev_rule.region[2])
                     # OR the backtracking is at the upper bound (region[3])
@@ -123,23 +157,25 @@ class Trainer:
                             # soon, this will be replaced by just having the searcher step into the env
                             # that way, we don't have to call these checks...
                             new_state = (prev_rule.region[3], search_space.current_state[1])
-                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (new_state != (1, 4)):
+                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                    new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                    new_state != (1, 4)):
                                 search_space.current_state = new_state
-                            #search_space.current_state = (prev_rule.region[3], search_space.current_state[1])
-                            print('curr: ' + str(search_space.current_state))
+                            # search_space.current_state = (prev_rule.region[3], search_space.current_state[1])
+                            # print('curr: ' + str(search_space.current_state))
                         else:
                             # search_space.current_state = (prev_rule.region[3], search_space.current_state[0])
                             new_state = (search_space.current_state[0], prev_rule.region[3])
-                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (new_state != (1, 4)):
+                            if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                    new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                    new_state != (1, 4)):
                                 search_space.current_state = new_state
                             # search_space.current_state = (search_space.current_state[0], prev_rule.region[3])
-                            print('curr: ' + str(search_space.current_state))
+                            # print('curr: ' + str(search_space.current_state))
                     # simulate
                     state, reward, terminate = search_space.step(action)
                 else:
                     # if the agent is out of the region of the previous rule, we are done with it and can save it
-
-                    print('reward was negative, out of bounds of previous learner')
                     prev_rule = Rule(uuid.uuid4(), region)
                     self.rules.append(prev_rule)
                     # region = [0, 0, 10, 0]
@@ -165,7 +201,7 @@ class Trainer:
                         action = 2
                     elif hard_code_count == 3:
                         action = 1
-            print('\n\n')
+            # print('\n\n')
         prev_rule = Rule(uuid.uuid4(), region)
         self.rules.append(prev_rule)
         search_space.reset()

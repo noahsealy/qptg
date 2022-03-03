@@ -22,8 +22,8 @@ class Agent:
             total_reward += reward
             if isDone:
                 self.team.final_update(l_t, a_t, reward)
-                for learner in self.team.learners:
-                    learner.program.display()
+                # for learner in self.team.learners:
+                #     learner.program.display()
                 return total_reward, True, states, seq
             l_next, a_next = self.team.evaluate(env.current_state)
 
@@ -37,8 +37,8 @@ class Agent:
         # if we are here we did not win...
         # so, reroll the programs!
         # this is not right, as it will screw up learners for other teams...
-        for learner in self.team.learners:
-            learner.program.reroll()
+        # for learner in self.team.learners:
+        #     learner.program.reroll()
         return total_reward, False, states, seq
 
     def replay(self, env):

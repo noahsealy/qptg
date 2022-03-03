@@ -10,9 +10,11 @@ class Program:
 
     def execute(self, state):
         # if state is within program's rule region, bid high
+        # if state[self.rule.region[0]] == self.rule.region[1] and \
+        #         ((state[not self.rule.region[0]] >= self.rule.region[2]) or
+        #          (state[not self.rule.region[0]] <= self.rule.region[3])):
         if state[self.rule.region[0]] == self.rule.region[1] and \
-                ((state[not self.rule.region[0]] > self.rule.region[2]) or
-                 (state[not self.rule.region[0]] < self.rule.region[3])):
+                self.rule.region[2] <= state[not self.rule.region[0]] <= self.rule.region[3]:
             return 10
         return -10
 

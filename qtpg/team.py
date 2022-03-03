@@ -21,7 +21,8 @@ class Team:
 
     def sampleLearners(self, learners):
         for i in range(self.numLearners):
-            sample = random.randint(0, len(learners) - 1)
+            # sample = random.randint(0, len(learners) - 1)
+            sample = i
             self.learners.append(learners[sample])
 
     # create q table, assign random actions
