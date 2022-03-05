@@ -33,7 +33,7 @@ class Trainer:
             self.agents.append(agent)
         print('start!')
         for rule in self.rules:
-            print(rule.id)
+            # print(rule.id)
             print(rule.region)
         print('end!')
 
