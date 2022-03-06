@@ -28,18 +28,23 @@ class Team:
     # create q table, assign random actions
     def createInitQTable(self):
         for learner in self.learners:
-            action = random.randint(0, 3)
-            opposite = 0
-            if action == 0:
-                opposite = 1
-            elif action == 2:
-                opposite = 3
-            elif action == 3:
-                opposite = 2
-
-            action_list = [action, opposite]
+            # old action selection
+            # action = random.randint(0, 3)
+            # opposite = 0
+            # if action == 0:
+            #     opposite = 1
+            # elif action == 2:
+            #     opposite = 3
+            # elif action == 3:
+            #     opposite = 2
+            #
+            # action_list = [action, opposite]
+            # actions = len(action_list)
+            action_list = []
+            # new action selection, based on region search
+            for action in learner.program.rule.action_set:
+                action_list.append(action)
             actions = len(action_list)
-
             for i in range(actions):
                 self.q_table.append({'learner': str(learner.id), 'action': action_list[i], 'q': 0})
 

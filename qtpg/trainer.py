@@ -57,8 +57,9 @@ class Trainer:
         # init vars
         rules, region = [], [0, 0, 0, 0]
         # init prev_rule, set it all to 0 so nothing gets accidentally hit... but should test this
-        prev_rule = Rule(-1, [1, -1, -1, -1])
-
+        prev_rule = Rule(-1, [1, -1, -1, -1], (-1, -1))
+        prev_action = 0
+        prev_opposite = 0
         # init action selection
         action, prev_action, opposite = random.randint(0, 3), 0, 0
         if action == 0:
@@ -69,6 +70,7 @@ class Trainer:
             opposite = 2
         hard_code_count = 0
         action = 2  # remove!
+        opposite = 3
         # find "locked coord"
         # if it is going north or south (0, 1), the "locked" coord is x, so 0
         # else, it will be x, as the x won't change with east or west
@@ -176,7 +178,10 @@ class Trainer:
                     state, reward, terminate = search_space.step(action)
                 else:
                     # if the agent is out of the region of the previous rule, we are done with it and can save it
-                    prev_rule = Rule(uuid.uuid4(), region)
+                    prev_action = action
+                    prev_opposite = opposite
+                    action_set = (prev_action, prev_opposite)
+                    prev_rule = Rule(uuid.uuid4(), region, action_set)
                     self.rules.append(prev_rule)
                     # region = [0, 0, 10, 0]
                     region = [0, 0, 0, 0]
@@ -197,17 +202,25 @@ class Trainer:
                     hard_code_count += 1
                     if hard_code_count == 1:
                         action = 0
+                        opposite = 1
                     elif hard_code_count == 2:
                         action = 2
+                        opposite = 3
                     elif hard_code_count == 3:
                         action = 1
+                        opposite = 0
             # print('\n\n')
-        prev_rule = Rule(uuid.uuid4(), region)
+        action_set = (action, opposite)
+        prev_rule = Rule(uuid.uuid4(), region, action_set)
         self.rules.append(prev_rule)
         search_space.reset()
-        for rule in self.rules:
-            print(rule.id)
-            print(rule.region)
+        for i in range(len(self.rules)):
+            print(self.rules[i].id)
+            print(self.rules[i].region)
+            print(self.rules[i].action_set)
+        # for rule in self.rules:
+        #     print(rule.id)
+        #     print(rule.region)
 
     def evolve(self) -> None:
         self.generate(self.select())
