@@ -58,6 +58,7 @@ class Trainer:
         rules, region = [], [0, 0, 0, 0]
         # init prev_rule, set it all to 0 so nothing gets accidentally hit... but should test this
         prev_rule = Rule(-1, [1, -1, -1, -1], (-1, -1))
+        step_count = 0
         prev_action = 0
         prev_opposite = 0
         # init action selection
@@ -68,16 +69,17 @@ class Trainer:
             opposite = 3
         elif action == 3:
             opposite = 2
-        hard_code_count = 0
-        action = 2  # remove!
-        opposite = 3
+        # hard_code_count = 0
+        # action = 2  # remove!
+        # opposite = 3
         # find "locked coord"
         # if it is going north or south (0, 1), the "locked" coord is x, so 0
         # else, it will be x, as the x won't change with east or west
         region[0] = 0
         if action == 0 or action == 1:
             region[0] = 1
-
+        reset_region = region
+        reset_state = search_space.current_state
         state, reward, terminate = search_space.step(action)
         index = 0
         while not terminate:
@@ -89,6 +91,7 @@ class Trainer:
             # print(prev_rule.region)
             if index != 0:
                 state, reward, terminate = search_space.step(action)
+            step_count += 1
             index += 1
             if reward > 0:
                 # prune any overlap, by removing the contested cell from the prev
@@ -120,6 +123,16 @@ class Trainer:
                 else:
                     region[3] = search_space.current_state[not region[0]]
             else:
+                print(step_count)
+                print(action)
+                print(opposite)
+                if step_count > 5:
+                    print(reset_state)
+                    print('reset')
+                    action, opposite = opposite, action
+                    region = reset_region
+                    search_space.current_state = reset_state
+                    step_count = 0
                 # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
                 if (search_space.current_state[prev_rule.region[0]] == prev_rule.region[1]) and (
                         search_space.current_state[not prev_rule.region[0]] >= prev_rule.region[2] or
@@ -175,7 +188,7 @@ class Trainer:
                             # search_space.current_state = (search_space.current_state[0], prev_rule.region[3])
                             # print('curr: ' + str(search_space.current_state))
                     # simulate
-                    state, reward, terminate = search_space.step(action)
+                    # state, reward, terminate = search_space.step(action)
                 else:
                     # if the agent is out of the region of the previous rule, we are done with it and can save it
                     prev_action = action
@@ -199,16 +212,19 @@ class Trainer:
                         region[2] = search_space.current_state[0]
                         region[3] = search_space.current_state[0]
                         # region[1] = prev_rule.region[1]
-                    hard_code_count += 1
-                    if hard_code_count == 1:
-                        action = 0
-                        opposite = 1
-                    elif hard_code_count == 2:
-                        action = 2
-                        opposite = 3
-                    elif hard_code_count == 3:
-                        action = 1
-                        opposite = 0
+                    reset_region = region
+                    reset_state = search_space.current_state
+                    step_count = 0
+                    # hard_code_count += 1
+                    # if hard_code_count == 1:
+                    #     action = 0
+                    #     opposite = 1
+                    # elif hard_code_count == 2:
+                    #     action = 2
+                    #     opposite = 3
+                    # elif hard_code_count == 3:
+                    #     action = 1
+                    #     opposite = 0
             # print('\n\n')
         action_set = (action, opposite)
         prev_rule = Rule(uuid.uuid4(), region, action_set)
