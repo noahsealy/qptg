@@ -3,3 +3,4 @@ PyQTPG.egg-info/*
 __pycache__/*
 .DS_Store
 .idea/*
+qtpg/__pycache__/*
