@@ -107,7 +107,7 @@ class Team:
     ##############################
     # Region search stuff begins
     ##############################
-
+#hey hey
     def select_rule(self):
         top_fitness = -100
         top_rule = None
