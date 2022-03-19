@@ -9,12 +9,13 @@ from .learner import Learner
 
 class Trainer:
 
-    def __init__(self, gap, numLearners, numAgents, alpha, discount, epsilon):
+    def __init__(self, gap, numLearners, numAgents, max_rules, alpha, discount, epsilon):
         self.learnerPopulationSize = 20
         self.learnerPopulation = []
         self.agents = []
         self.rules = []
         self.gap = gap  # percentage of teams we'll select to evolve
+        self.max_rules = max_rules  # for search stuff
         self.numLearners = numLearners
         self.numAgents = numAgents
         self.alpha = alpha
@@ -25,7 +26,7 @@ class Trainer:
         self.generateLearnerPopulation()
         print(len(self.learnerPopulation))
         for i in range(self.numAgents):
-            team = Team(uuid.uuid4(), self.numLearners, self.alpha, self.discount, self.epsilon)
+            team = Team(uuid.uuid4(), self.numLearners, self.max_rules, self.alpha, self.discount, self.epsilon)
             # team.createInitLearners()
             team.sampleLearners(self.learnerPopulation)
             team.createInitQTable()
@@ -57,7 +58,7 @@ class Trainer:
         # init vars
         rules, region = [], [0, 0, 0, 0]
         # init prev_rule, set it all to 0 so nothing gets accidentally hit... but should test this
-        prev_rule = Rule(-1, [1, -1, -1, -1], (-1, -1))
+        prev_rule = Rule(-1, [1, -1, -1, -1], (-1, -1), 0)
         step_count = 0
         prev_action = 0
         prev_opposite = 0
@@ -194,7 +195,7 @@ class Trainer:
                     prev_action = action
                     prev_opposite = opposite
                     action_set = (prev_action, prev_opposite)
-                    prev_rule = Rule(uuid.uuid4(), region, action_set)
+                    prev_rule = Rule(uuid.uuid4(), region, action_set, 0)
                     self.rules.append(prev_rule)
                     # region = [0, 0, 10, 0]
                     region = [0, 0, 0, 0]
