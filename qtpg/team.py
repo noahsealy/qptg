@@ -1,5 +1,6 @@
 import random
 import uuid
+import copy
 
 from .learner import Learner
 from .rule import Rule
@@ -107,7 +108,7 @@ class Team:
     ##############################
     # Region search stuff begins
     ##############################
-#hey hey
+
     def select_rule(self):
         top_fitness = -100
         top_rule = None
@@ -136,14 +137,17 @@ class Team:
         # we use current state instead of the max region because the max gets clipped from orthogonal backtracking
         sample_start = [0, 0]
         sample_start[selected_rule.region[0]] = selected_rule.region[1]  # assign the non-moving space to the non-moving coord
+
         if selected_rule.region[2] - selected_rule.region[3] == 0:
             sample_start[not selected_rule.region[0]] = selected_rule.region[2]  # in case region is the same
             # ^ this is no longer true when we add curr state to max sampled...
         else:
             # need to make sure the farther region is the larger number in the random
-            if selected_rule.region[2] > selected_rule.region[3]:
-                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[3],
-                                                                           selected_rule.region[2]-1)
+            if selected_rule.region[2] > selected_rule.region[3]:  # TODO this should never be...
+                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[3],
+                #                                                            selected_rule.region[2]-1)
+                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
+                                                                           selected_rule.region[3]-1)
                 # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[3],
                 #                                                            env.current_state[not selected_rule.region[0]])
             else:
@@ -154,6 +158,7 @@ class Team:
 
         env.current_state = (sample_start[0], sample_start[1])
 
+        print(f'Start: {env.current_state}')
         # init region
         reward = 0
         region = [0, 0, 0, 0]
@@ -165,88 +170,169 @@ class Team:
         elif action == 1:
             region[0] = 1
             region[1] = env.current_state[1]
-            # region[2] = env.current_state[]
-            region[3] = env.current_state[0]
+            region[2] = env.current_state[0]
+            # region[3] = env.current_state[0]
         elif action == 2:
             region[0] = 0
             region[1] = env.current_state[0]
             region[2] = env.current_state[1]
-            # region[3] = env.current_state[]
+            # region[3] = env.current_state[1]
         elif action == 3:
             region[0] = 0
             region[1] = env.current_state[0]
-            # region[2] = env.current_state[]
-            region[3] = env.current_state[1]
+            region[2] = env.current_state[1]
+            # region[3] = env.current_state[1]
 
         fitness = 0
         # search region
         terminate = False
-        while reward >= 0:
+        backTrack = False
+        # updated_parent = Rule(uuid.uuid4(), selected_rule.region, selected_rule.action_set, selected_rule.fitness)
+        updated_parent = copy.deepcopy(selected_rule)
+
+        # for backtracking, we need to ensure it is out of the zone when it gets a negative reward
+        # TODO how does the logic here work...?
+        while reward >= 0 or (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state)):
+        # while reward >= 0:
+            # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
+            if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state):
+                backTrack = True
+                print('backtracked')
+                print(env.current_state)
+                # if the state where backtracking is required is the lower bound
+                if env.current_state[not updated_parent.region[0]] == updated_parent.region[2]:
+                    # backtrack the region bound, we add here as it is always a lower bound
+                    if updated_parent.region[2] < 4:
+                        updated_parent.region[2] = updated_parent.region[2] + 1
+                    if updated_parent.region[0] == 1:
+                        # update the env state
+                        new_state = (updated_parent.region[2], env.current_state[1])
+                        print(f'new state --> {new_state}')
+                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                new_state != (1, 4)):
+                            env.current_state = new_state
+                    else:
+                        new_state = (env.current_state[0], updated_parent.region[2])
+                        print(f'new state --> {new_state}')
+                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                new_state != (1, 4)):
+                            env.current_state = new_state
+
+                # coord that we're not keeping constant must equal the upper bound
+                else:
+                    # backtrack the region bound, we subtract here as it is always an upper bound
+                    if updated_parent.region[3] > 0:
+                        updated_parent.region[3] = updated_parent.region[3] - 1
+                    # correct the position of the agent, tuples are immutable...
+                    if updated_parent.region[0] == 1:
+                        # soon, this will be replaced by just having the searcher step into the env
+                        # that way, we don't have to call these checks...
+                        new_state = (updated_parent.region[3], env.current_state[1])
+                        print(f'new state --> {new_state}')
+                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                new_state != (1, 4)):
+                            env.current_state = new_state
+
+                    else:
+                        # search_space.current_state = (prev_rule.region[3], search_space.current_state[0])
+                        new_state = (env.current_state[0], updated_parent.region[3])
+                        print(f'new state --> {new_state}')
+                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
+                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
+                                new_state != (1, 4)):
+                            env.current_state = new_state
+
+                print(env.current_state)
 
             # track region
             if action == 0:
                 region[3] = env.current_state[0]
             elif action == 1:
-                region[2] = env.current_state[0]
+                # region[2] = env.current_state[0]
+                region[3] = env.current_state[0]
             elif action == 2:
                 region[3] = env.current_state[1]
             elif action == 3:
-                region[2] = env.current_state[1]
+                # region[2] = env.current_state[1]
+                region[3] = env.current_state[1]
             fitness += reward
 
             state, reward, terminate = env.step(action)
-            # print(state)
+
             if terminate:
                 print('win!')
                 # track region TODO: clean this up
                 if action == 0:
                     region[3] = env.current_state[0]
                 elif action == 1:
-                    region[2] = env.current_state[0]
+                    # region[2] = env.current_state[0]
+                    region[3] = env.current_state[0]
                 elif action == 2:
                     region[3] = env.current_state[1]
                 elif action == 3:
-                    region[2] = env.current_state[1]
+                    # region[2] = env.current_state[1]
+                    region[3] = env.current_state[1]
                 fitness += reward
                 break
             # print(state)
 
         # backtrack (or front-track?), to leave room for orthogonal
         if not terminate:
+            # TODO could make this code a lot cleaner...
             # track region
-            if action == 0:
+            if action == 0 and region[3] > 0:
                 region[3] -= 1
-            elif action == 1:
-                region[2] += 1
-            elif action == 2:
+            # elif action == 1 and region[2] < 4:
+                # region[2] += 1
+            elif action == 1 and region[3] < 4:
+                region[3] += 1
+            elif action == 2 and region[3] > 0:
                 region[3] -= 1
-            elif action == 3:
-                region[2] += 1
+            # elif action == 3 and region[2] < 4:
+            #     region[2] += 1
+            elif action == 3 and region[3] < 4:
+                region[3] += 1
 
         # construct the rule
         rule = Rule(uuid.uuid4(), region, action, fitness)
-        print(rule.region)
-        print(rule.fitness)
-        return rule, terminate
+        # print(rule.region)
+        # print(rule.fitness)
+        return rule, terminate, backTrack, updated_parent
 
     def evaluate_rule(self, offspring):
-        if len(self.rule_pool) >= self.max_rules:
-        #     for i in range(len(self.rule_pool)):
-        #         if self.rule_pool[i].fitness < offspring.fitness:
-        #             self.rule_pool[i] = offspring
-        #             break
-            lowest_fitness = 10000
-            lowest_index = 0
-            for i in range(len(self.rule_pool)):
-                # find lowest fitness out of rule pool
-                if self.rule_pool[i].fitness < lowest_fitness:
-                    lowest_fitness = self.rule_pool[i].fitness
-                    lowest_index = i
-                # see if offspring beats out the lowest fitness
-                if offspring.fitness > lowest_fitness:
-                    self.rule_pool[lowest_index] = offspring
-        else:
-            self.rule_pool.append(offspring)
+        repeat = False
+        for rule in self.rule_pool:
+            if rule.region == offspring.region:
+                repeat = True
+        repeat = False # turn off blocking repeats while figuring out backtracking...
+        if not repeat:
+            if len(self.rule_pool) == self.max_rules:
+                lowest_fitness = 10000
+                lowest_index = 0
+                for i in range(len(self.rule_pool)):
+                    # find lowest fitness out of rule pool
+                    if self.rule_pool[i].fitness < lowest_fitness:
+                        lowest_fitness = self.rule_pool[i].fitness
+                        lowest_index = i
+                    # see if offspring beats out the lowest fitness
+                    if offspring.fitness > lowest_fitness:
+                        self.rule_pool[lowest_index] = offspring
+            else:
+                self.rule_pool.append(offspring)
+
+    # function to validate if the region is in the parent region, used in back-tracking
+    # if the child's position is in the parent's region, return true, else false
+    def in_parent_region(self, parent_region, child_position):
+        if child_position[parent_region[0]] == parent_region[1] and \
+                (parent_region[2] <= child_position[not parent_region[0]] <= parent_region[3]):
+        # if (child_position[parent_region[0]] == parent_region[1]) and (
+        #         child_position[not parent_region[0]] >= parent_region[2] or
+        #         child_position[not parent_region[0]] <= parent_region[3]):
+            return True
+        return False
 
     ##############################
     # Region search stuff ends
