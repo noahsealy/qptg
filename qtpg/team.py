@@ -170,8 +170,10 @@ class Team:
         elif action == 1:
             region[0] = 1
             region[1] = env.current_state[1]
-            region[2] = env.current_state[0]
-            # region[3] = env.current_state[0]
+            # the action is south, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            # region[2] = env.current_state[0]
+            region[3] = env.current_state[0]
         elif action == 2:
             region[0] = 0
             region[1] = env.current_state[0]
@@ -180,8 +182,10 @@ class Team:
         elif action == 3:
             region[0] = 0
             region[1] = env.current_state[0]
-            region[2] = env.current_state[1]
-            # region[3] = env.current_state[1]
+            # the action is west, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            # region[2] = env.current_state[1]
+            region[3] = env.current_state[1]
 
         fitness = 0
         # search region
@@ -251,13 +255,15 @@ class Team:
             if action == 0:
                 region[3] = env.current_state[0]
             elif action == 1:
-                # region[2] = env.current_state[0]
-                region[3] = env.current_state[0]
+                # region bound is decreasing, so set the lower bound to current state
+                region[2] = env.current_state[0]
+                # region[3] = env.current_state[0]
             elif action == 2:
                 region[3] = env.current_state[1]
             elif action == 3:
-                # region[2] = env.current_state[1]
-                region[3] = env.current_state[1]
+                # region bound is decreasing
+                region[2] = env.current_state[1]
+                # region[3] = env.current_state[1]
             fitness += reward
 
             state, reward, terminate = env.step(action)
@@ -268,13 +274,15 @@ class Team:
                 if action == 0:
                     region[3] = env.current_state[0]
                 elif action == 1:
-                    # region[2] = env.current_state[0]
-                    region[3] = env.current_state[0]
+                    # region[2] will take on the current state, because the region bound is decreasing here
+                    region[2] = env.current_state[0]
+                    # region[3] = env.current_state[0]
                 elif action == 2:
                     region[3] = env.current_state[1]
                 elif action == 3:
-                    # region[2] = env.current_state[1]
-                    region[3] = env.current_state[1]
+                    # region bouond is also decreasing here
+                    region[2] = env.current_state[1]
+                    # region[3] = env.current_state[1]
                 fitness += reward
                 break
             # print(state)
