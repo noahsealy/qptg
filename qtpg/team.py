@@ -126,14 +126,15 @@ class Team:
         # return top_rule, top_fitness
         return top_rule
 
-    def search(self, selected_rule, env, index):
-
+    def search(self, selected_rule, env):
+        print('new search:--------------------------------')
         action = 0
         if selected_rule.action_set == 0 or selected_rule.action_set == 1:
             action = random.randint(2, 3)
         elif selected_rule.action_set == 2 or selected_rule.action_set == 3:
             action = random.randint(0, 1)
-
+        print(f'parennt action :{selected_rule.action_set}')
+        print(f'child action :{action}')
         # sample start within the region
         # we use current state instead of the max region because the max gets clipped from orthogonal backtracking
         sample_start = [0, 0]
@@ -143,6 +144,7 @@ class Team:
 
         illegal = True
         # reject all illegal cells with this while loop
+        print(f'Selected region: {selected_rule.region}')
         while illegal:
             # north and east start sampling
             if (action == 0 or action == 2) and selected_rule.region[3] < 4:
@@ -163,36 +165,6 @@ class Team:
                 illegal = False
 
         print(f'Sample start: {sample_start}')
-        # if selected_rule.region[2] - selected_rule.region[3] == 0:
-        #     sample_start[not selected_rule.region[0]] = selected_rule.region[2]  # in case region is the same
-        #     # ^ this is no longer true when we add curr state to max sampled...
-        # else:
-        #     # need to make sure the farther region is the larger number in the random
-        #     if selected_rule.region[2] > selected_rule.region[3]:  # TODO this should never be...
-        #         sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-        #                                                                    selected_rule.region[3]-1)
-        #     else:
-        #         sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-        #                                                                    selected_rule.region[3]+1)
-
-
-        ####### HARDCODING TO MAKE IT WORK START ##########
-
-        if index == 0:
-            action = 2
-            sample_start = [0, 0]
-        elif index == 1:
-            action = 0
-            sample_start = [0, 4]
-        elif index == 2:
-            action = 2
-            sample_start = [4, 2]
-        elif index == 3:
-            action = 1
-            sample_start = [4, 4]
-
-        ####### HARDCODING TO MAKE IT WORK END ############
-
 
         env.current_state = (sample_start[0], sample_start[1])
 
@@ -234,7 +206,10 @@ class Team:
 
         # for backtracking, we need to ensure it is out of the zone when it gets a negative reward
         # TODO how does the logic here work...?
-        while reward >= 0 or (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action)):
+        backTrackLimit = 0
+        while (reward >= 0 or (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action))) \
+                and backTrackLimit < 5:
+            backTrackLimit += 1
             # while reward >= 0:
             # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
             if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action):
@@ -244,7 +219,7 @@ class Team:
                 # if the state where backtracking is required is the lower bound
                 if env.current_state[not updated_parent.region[0]] == updated_parent.region[2]:
                     # backtrack the region bound, we add here as it is always a lower bound
-                    if updated_parent.region[2] < 4:
+                    if updated_parent.region[2] < 4 and (region[2] < region[3]):
                         updated_parent.region[2] = updated_parent.region[2] + 1
                     if updated_parent.region[0] == 1:
                         # update the env state
@@ -254,6 +229,7 @@ class Team:
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
                             env.current_state = new_state
+                            region[1] = env.current_state[0]
                     else:
                         new_state = (env.current_state[0], updated_parent.region[2])
                         print(f'new state --> {new_state}')
@@ -261,11 +237,12 @@ class Team:
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
                             env.current_state = new_state
+                            region[1] = env.current_state[1]
 
                 # coord that we're not keeping constant must equal the upper bound
                 else:
                     # backtrack the region bound, we subtract here as it is always an upper bound
-                    if updated_parent.region[3] > 0:
+                    if updated_parent.region[3] > 0 and (region[2] < region[3]):
                         updated_parent.region[3] = updated_parent.region[3] - 1
                     # correct the position of the agent, tuples are immutable...
                     if updated_parent.region[0] == 1:
@@ -277,7 +254,7 @@ class Team:
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
                             env.current_state = new_state
-
+                            region[1] = env.current_state[0]
                     else:
                         # search_space.current_state = (prev_rule.region[3], search_space.current_state[0])
                         new_state = (env.current_state[0], updated_parent.region[3])
@@ -286,6 +263,7 @@ class Team:
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
                             env.current_state = new_state
+                            region[1] = env.current_state[1]
 
                 print(env.current_state)
 
@@ -323,15 +301,26 @@ class Team:
 
         # clipping (to leave room for orthogonal action)
         if not terminate:
-            if (action == 0 or action == 2) and region[3] < 4:
+            if (action == 0 or action == 2) and region[3] <= 4 and (region[2] - region[3] != 0):
                 region[3] -= 1
-            elif (action == 1 or action == 3) and region[2] > 0:
+            elif (action == 1 or action == 3) and region[2] >= 0 and (region[2] - region[3] != 0):
                 region[2] += 1
+
+        # need to clip updated_parent if backtrack is true
+        if backTrack:
+            if (action == 0 or action == 2) and updated_parent.region[3] <= 4 and \
+                    (updated_parent.region[2] - updated_parent.region[3] != 0):
+                updated_parent.region[3] -= 1
+            elif (action == 1 or action == 3) and updated_parent.region[2] >= 0 and \
+                    (updated_parent.region[2] - updated_parent.region[3] != 0):
+                updated_parent.region[2] += 1
 
         # construct the rule
         rule = Rule(uuid.uuid4(), region, action, fitness)
         # print(rule.region)
         # print(rule.fitness)
+        if backTrack:
+            print(f'updated parent: {updated_parent.region}')
         return rule, terminate, backTrack, updated_parent
 
     def evaluate_rule(self, offspring):
@@ -349,17 +338,15 @@ class Team:
                     if self.rule_pool[i].fitness < lowest_fitness:
                         lowest_fitness = self.rule_pool[i].fitness
                         lowest_index = i
-                    # see if offspring beats out the lowest fitness
-                    if offspring.fitness > lowest_fitness:
-                        self.rule_pool[lowest_index] = offspring
+                # see if offspring beats out the lowest fitness
+                if offspring.fitness > lowest_fitness:
+                    self.rule_pool[lowest_index] = offspring
             else:
                 self.rule_pool.append(offspring)
 
     # function to validate if the region is in the parent region, used in back-tracking
     # if the child's position is in the parent's region, return true, else false
     def in_parent_region(self, parent_region, child_position, action):
-        print(f'parent region: {parent_region}')
-        print(f'child position: {child_position}')
         # need to add in action checks to compensate for clipping
         # the action should be able to start in the clipped part (... that's the whole point of clipping)
         # it's safe here to assume the region is not out of bounds
