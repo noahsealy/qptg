@@ -126,7 +126,8 @@ class Team:
         # return top_rule, top_fitness
         return top_rule
 
-    def search(self, selected_rule, env):
+    def search(self, selected_rule, env, index):
+
         action = 0
         if selected_rule.action_set == 0 or selected_rule.action_set == 1:
             action = random.randint(2, 3)
@@ -136,25 +137,62 @@ class Team:
         # sample start within the region
         # we use current state instead of the max region because the max gets clipped from orthogonal backtracking
         sample_start = [0, 0]
-        sample_start[selected_rule.region[0]] = selected_rule.region[1]  # assign the non-moving space to the non-moving coord
 
-        if selected_rule.region[2] - selected_rule.region[3] == 0:
-            sample_start[not selected_rule.region[0]] = selected_rule.region[2]  # in case region is the same
-            # ^ this is no longer true when we add curr state to max sampled...
-        else:
-            # need to make sure the farther region is the larger number in the random
-            if selected_rule.region[2] > selected_rule.region[3]:  # TODO this should never be...
-                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[3],
-                #                                                            selected_rule.region[2]-1)
+        # assign the non-moving space to the non-moving coord
+        sample_start[selected_rule.region[0]] = selected_rule.region[1]
+
+        illegal = True
+        # reject all illegal cells with this while loop
+        while illegal:
+            # north and east start sampling
+            if (action == 0 or action == 2) and selected_rule.region[3] < 4:
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-                                                                           selected_rule.region[3]-1)
-                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[3],
-                #                                                            env.current_state[not selected_rule.region[0]])
+                                                                           selected_rule.region[3] + 1)
+            # south and west start sampling
+            elif (action == 1 or action == 3) and selected_rule.region[2] > 0:
+                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2] - 1,
+                                                                           selected_rule.region[3])
+            # covers sampling for outskirt cells, as we can not add or subtract from those
             else:
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-                                                                           selected_rule.region[3]+1)
-                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-                #                                                            env.current_state[not selected_rule.region[0]])
+                                                                           selected_rule.region[3])
+
+            if sample_start != [2, 0] and sample_start != [2, 1] and sample_start != [3, 1] \
+                    and sample_start != [1, 3] and sample_start != [2, 3] and sample_start != [3, 3] \
+                    and sample_start != [1, 4]:
+                illegal = False
+
+        print(f'Sample start: {sample_start}')
+        # if selected_rule.region[2] - selected_rule.region[3] == 0:
+        #     sample_start[not selected_rule.region[0]] = selected_rule.region[2]  # in case region is the same
+        #     # ^ this is no longer true when we add curr state to max sampled...
+        # else:
+        #     # need to make sure the farther region is the larger number in the random
+        #     if selected_rule.region[2] > selected_rule.region[3]:  # TODO this should never be...
+        #         sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
+        #                                                                    selected_rule.region[3]-1)
+        #     else:
+        #         sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
+        #                                                                    selected_rule.region[3]+1)
+
+
+        ####### HARDCODING TO MAKE IT WORK START ##########
+
+        if index == 0:
+            action = 2
+            sample_start = [0, 0]
+        elif index == 1:
+            action = 0
+            sample_start = [0, 4]
+        elif index == 2:
+            action = 2
+            sample_start = [4, 2]
+        elif index == 3:
+            action = 1
+            sample_start = [4, 4]
+
+        ####### HARDCODING TO MAKE IT WORK END ############
+
 
         env.current_state = (sample_start[0], sample_start[1])
 
@@ -196,10 +234,10 @@ class Team:
 
         # for backtracking, we need to ensure it is out of the zone when it gets a negative reward
         # TODO how does the logic here work...?
-        while reward >= 0 or (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state)):
-        # while reward >= 0:
+        while reward >= 0 or (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action)):
+            # while reward >= 0:
             # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
-            if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state):
+            if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action):
                 backTrack = True
                 print('backtracked')
                 print(env.current_state)
@@ -270,39 +308,25 @@ class Team:
 
             if terminate:
                 print('win!')
-                # track region TODO: clean this up
-                if action == 0:
+                if action == 0 or action == 2:
                     region[3] = env.current_state[0]
+                # region[2] will take on the current state, because the region bound is decreasing here
                 elif action == 1:
-                    # region[2] will take on the current state, because the region bound is decreasing here
                     region[2] = env.current_state[0]
-                    # region[3] = env.current_state[0]
                 elif action == 2:
                     region[3] = env.current_state[1]
+                # also decreasing here...
                 elif action == 3:
-                    # region bouond is also decreasing here
                     region[2] = env.current_state[1]
-                    # region[3] = env.current_state[1]
                 fitness += reward
                 break
-            # print(state)
 
-        # backtrack (or front-track?), to leave room for orthogonal
+        # clipping (to leave room for orthogonal action)
         if not terminate:
-            # TODO could make this code a lot cleaner...
-            # track region
-            if action == 0 and region[3] > 0:
+            if (action == 0 or action == 2) and region[3] < 4:
                 region[3] -= 1
-            # elif action == 1 and region[2] < 4:
-                # region[2] += 1
-            elif action == 1 and region[3] < 4:
-                region[3] += 1
-            elif action == 2 and region[3] > 0:
-                region[3] -= 1
-            # elif action == 3 and region[2] < 4:
-            #     region[2] += 1
-            elif action == 3 and region[3] < 4:
-                region[3] += 1
+            elif (action == 1 or action == 3) and region[2] > 0:
+                region[2] += 1
 
         # construct the rule
         rule = Rule(uuid.uuid4(), region, action, fitness)
@@ -315,7 +339,7 @@ class Team:
         for rule in self.rule_pool:
             if rule.region == offspring.region:
                 repeat = True
-        repeat = False # turn off blocking repeats while figuring out backtracking...
+        # repeat = False # turn off blocking repeats while figuring out backtracking...
         if not repeat:
             if len(self.rule_pool) == self.max_rules:
                 lowest_fitness = 10000
@@ -333,14 +357,23 @@ class Team:
 
     # function to validate if the region is in the parent region, used in back-tracking
     # if the child's position is in the parent's region, return true, else false
-    def in_parent_region(self, parent_region, child_position):
-        if child_position[parent_region[0]] == parent_region[1] and \
-                (parent_region[2] <= child_position[not parent_region[0]] <= parent_region[3]):
-        # if (child_position[parent_region[0]] == parent_region[1]) and (
-        #         child_position[not parent_region[0]] >= parent_region[2] or
-        #         child_position[not parent_region[0]] <= parent_region[3]):
+    def in_parent_region(self, parent_region, child_position, action):
+        print(f'parent region: {parent_region}')
+        print(f'child position: {child_position}')
+        # need to add in action checks to compensate for clipping
+        # the action should be able to start in the clipped part (... that's the whole point of clipping)
+        # it's safe here to assume the region is not out of bounds
+        if (action == 0 or action == 2) and child_position[parent_region[0]] == parent_region[1] and \
+                parent_region[2] <= child_position[not parent_region[0]] <= (parent_region[3]+1):
+            return True
+        if (action == 1 or action == 3) and child_position[parent_region[0]] == parent_region[1] and \
+                (parent_region[2]-1) <= child_position[not parent_region[0]] <= parent_region[3]:
             return True
         return False
+        # if child_position[parent_region[0]] == parent_region[1] and \
+        #         (parent_region[2] <= child_position[not parent_region[0]] <= parent_region[3]):
+        #     return True
+        # return False
 
     ##############################
     # Region search stuff ends
