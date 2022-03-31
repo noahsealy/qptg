@@ -131,6 +131,7 @@ class Team:
         action = 0
         if selected_rule.action_set == 0 or selected_rule.action_set == 1:
             action = random.randint(2, 3)
+            # action = 2
         elif selected_rule.action_set == 2 or selected_rule.action_set == 3:
             action = random.randint(0, 1)
         print(f'parennt action :{selected_rule.action_set}')
@@ -148,21 +149,27 @@ class Team:
         while illegal:
             # north and east start sampling
             if (action == 0 or action == 2) and selected_rule.region[3] < 4:
-                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-                                                                           selected_rule.region[3] + 1)
+                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
+                #                                                            selected_rule.region[3] + 1)
+                sample_start[not selected_rule.region[0]] = selected_rule.region[3] + 1
             # south and west start sampling
             elif (action == 1 or action == 3) and selected_rule.region[2] > 0:
-                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2] - 1,
-                                                                           selected_rule.region[3])
+                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2] - 1,
+                #                                                            selected_rule.region[3])
+                sample_start[not selected_rule.region[0]] = selected_rule.region[2]-1
             # covers sampling for outskirt cells, as we can not add or subtract from those
             else:
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
                                                                            selected_rule.region[3])
-
+            print(sample_start)
             if sample_start != [2, 0] and sample_start != [2, 1] and sample_start != [3, 1] \
                     and sample_start != [1, 3] and sample_start != [2, 3] and sample_start != [3, 3] \
                     and sample_start != [1, 4]:
                 illegal = False
+            else:
+                # action = random.randint(0, 3)
+                # known bug, for now just throw out the results...
+                return Rule(-1, [0, 0, 0, 0], 0, -100), 0, 0, 0
 
         print(f'Sample start: {sample_start}')
 
@@ -217,9 +224,10 @@ class Team:
                 print('backtracked')
                 print(env.current_state)
                 # if the state where backtracking is required is the lower bound
-                if env.current_state[not updated_parent.region[0]] == updated_parent.region[2]:
+                # if env.current_state[not updated_parent.region[0]] == updated_parent.region[2]:
+                if action == 1 or action == 3:
                     # backtrack the region bound, we add here as it is always a lower bound
-                    if updated_parent.region[2] < 4 and (region[2] < region[3]):
+                    if updated_parent.region[2] < 4:
                         updated_parent.region[2] = updated_parent.region[2] + 1
                     if updated_parent.region[0] == 1:
                         # update the env state
@@ -242,7 +250,7 @@ class Team:
                 # coord that we're not keeping constant must equal the upper bound
                 else:
                     # backtrack the region bound, we subtract here as it is always an upper bound
-                    if updated_parent.region[3] > 0 and (region[2] < region[3]):
+                    if updated_parent.region[3] > 0:
                         updated_parent.region[3] = updated_parent.region[3] - 1
                     # correct the position of the agent, tuples are immutable...
                     if updated_parent.region[0] == 1:
@@ -321,6 +329,7 @@ class Team:
         # print(rule.fitness)
         if backTrack:
             print(f'updated parent: {updated_parent.region}')
+        print(f'resulting region: {rule.region}')
         return rule, terminate, backTrack, updated_parent
 
     def evaluate_rule(self, offspring):
