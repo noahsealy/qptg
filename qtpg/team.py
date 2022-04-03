@@ -19,6 +19,12 @@ class Team:
         self.rule_pool.append(Rule(-1, [0, 0, 0, 0], 0, 0))
         self.max_rules = max_rules
 
+        #### team competition variables start ####
+        self.mostRecent = 0  # TODO this isn't being set anywhere
+        self.fitness = 0  # TODO this isn't being set anywhere
+        self.start_state = (0, 0)  # TODO this isn't being set anywhere
+        #### team competition variables end ####
+
     def createInitLearners(self):
         for i in range(self.numLearners):
             learner = Learner(uuid.uuid4())
@@ -126,7 +132,8 @@ class Team:
         # return top_rule, top_fitness
         return top_rule
 
-    def search(self, selected_rule, env):
+    def search(self, env):
+        selected_rule = self.mostRecent.program.rule
         print('new search:--------------------------------')
         action = 0
         if selected_rule.action_set == 0 or selected_rule.action_set == 1:
@@ -323,14 +330,29 @@ class Team:
                     (updated_parent.region[2] - updated_parent.region[3] != 0):
                 updated_parent.region[2] += 1
 
-        # construct the rule
-        rule = Rule(uuid.uuid4(), region, action, fitness)
-        # print(rule.region)
-        # print(rule.fitness)
+        # update the parent's region in the team's learners if backtracking is true
+        # need to do this before updating mostRecent
         if backTrack:
-            print(f'updated parent: {updated_parent.region}')
+            for i in range(len(self.learners)):
+                if self.learners[i].id == self.mostRecent.id:
+                    self.learners[i].program.rule.region = updated_parent.region
+
+        # construct the learner holding the new rule
+        rule = Rule(uuid.uuid4(), region, action, fitness)
+        learner = Learner(uuid.uuid4(), rule)
+        # add that rule to the teams learners
+        self.learners.append(learner)
+        # add the rule's fitness to the team's overall fitness
+        self.fitness += rule.fitness
+        # set most recent to the rule that was just created
+        self.mostRecent = learner
+        # set the start_state for the next rule to where the last rule left off
+        self.start_state = env.current_state
+
+        if backTrack:
+            print(f'resulting updated parent: {updated_parent.region}')
         print(f'resulting region: {rule.region}')
-        return rule, terminate, backTrack, updated_parent
+        return terminate
 
     def evaluate_rule(self, offspring):
         repeat = False
