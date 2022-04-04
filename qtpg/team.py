@@ -231,6 +231,8 @@ class Team:
             # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
             if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action):
                 backTrack = True
+                backTrackedLowerBound = 0
+                backTrackedUpperBound = 0
                 # print('backtracked')
                 # print(env.current_state)
                 # if the state where backtracking is required is the lower bound
@@ -238,22 +240,27 @@ class Team:
                 if action == 1 or action == 3:
                     # backtrack the region bound, we add here as it is always a lower bound
                     if updated_parent.region[2] < 4:
-                        updated_parent.region[2] = updated_parent.region[2] + 1
+                        backTrackedLowerBound = updated_parent.region[2] + 1
+                        # updated_parent.region[2] = updated_parent.region[2] + 1
                     if updated_parent.region[0] == 1:
                         # update the env state
-                        new_state = (updated_parent.region[2], env.current_state[1])
+                        # new_state = (updated_parent.region[2], env.current_state[1])
+                        new_state = (backTrackedLowerBound, env.current_state[1])
                         # print(f'new state --> {new_state}')
                         if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
+                            updated_parent.region[2] = backTrackedLowerBound
                             env.current_state = new_state
                             region[1] = env.current_state[0]
                     else:
-                        new_state = (env.current_state[0], updated_parent.region[2])
+                        # new_state = (env.current_state[0], updated_parent.region[2])
+                        new_state = (env.current_state[0], backTrackedLowerBound)
                         # print(f'new state --> {new_state}')
                         if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
+                            updated_parent.region[2] = backTrackedLowerBound
                             env.current_state = new_state
                             region[1] = env.current_state[1]
 
@@ -261,25 +268,30 @@ class Team:
                 else:
                     # backtrack the region bound, we subtract here as it is always an upper bound
                     if updated_parent.region[3] > 0:
-                        updated_parent.region[3] = updated_parent.region[3] - 1
+                        # updated_parent.region[3] = updated_parent.region[3] - 1
+                        backTrackedUpperBound = updated_parent.region[3] - 1
                     # correct the position of the agent, tuples are immutable...
                     if updated_parent.region[0] == 1:
                         # soon, this will be replaced by just having the searcher step into the env
                         # that way, we don't have to call these checks...
-                        new_state = (updated_parent.region[3], env.current_state[1])
+                        # new_state = (updated_parent.region[3], env.current_state[1])
+                        new_state = (backTrackedUpperBound, env.current_state[1])
                         # print(f'new state --> {new_state}')
                         if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
+                            updated_parent.region[3] = backTrackedUpperBound
                             env.current_state = new_state
                             region[1] = env.current_state[0]
                     else:
                         # search_space.current_state = (prev_rule.region[3], search_space.current_state[0])
-                        new_state = (env.current_state[0], updated_parent.region[3])
+                        # new_state = (env.current_state[0], updated_parent.region[3])
+                        new_state = (env.current_state[0], backTrackedUpperBound)
                         # print(f'new state --> {new_state}')
                         if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
                                 new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
                                 new_state != (1, 4)):
+                            updated_parent.region[3] = backTrackedUpperBound
                             env.current_state = new_state
                             region[1] = env.current_state[1]
 
@@ -325,13 +337,13 @@ class Team:
                 region[2] += 1
 
         # need to clip updated_parent if backtrack is true
-        if backTrack:
-            if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
-                    (updated_parent.region[2] - updated_parent.region[3] != 0):
-                updated_parent.region[3] -= 1
-            elif (action == 1 or action == 3) and updated_parent.region[2] < 4 and \
-                    (updated_parent.region[2] - updated_parent.region[3] != 0):
-                updated_parent.region[2] += 1
+        # if backTrack:
+        #     if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
+        #             (updated_parent.region[2] - updated_parent.region[3] != 0):
+        #         updated_parent.region[3] -= 1
+        #     elif (action == 1 or action == 3) and updated_parent.region[2] < 4 and \
+        #             (updated_parent.region[2] - updated_parent.region[3] != 0):
+        #         updated_parent.region[2] += 1
 
         # update the parent's region in the team's learners if backtracking is true
         # need to do this before updating mostRecent
