@@ -5,9 +5,15 @@ class SearchManager:
         self.teamPool = []
         self.winners = []
 
-    def evaluate_team(self, child):
+    def evaluate_team(self, data):
         # put this on agent... or team, or trainer...?
-        for team in self.teamPool:
+        child = data[0]
+        win = data[1]
+
+        if win:
+            self.winners.append(child)
+        else:
+            # if teamPool is filled up, teams compete based on fitness
             if len(self.teamPool) == self.maxTeamPoolSize:
                 lowest_fitness = 10000
                 lowest_index = 0
@@ -16,9 +22,10 @@ class SearchManager:
                     if self.teamPool[i].fitness < lowest_fitness:
                         lowest_fitness = self.teamPool[i].fitness
                         lowest_index = i
-                # see if offspring beats out the lowest fitness
-                if team.fitness > lowest_fitness:
-                    self.teamPool[lowest_index] = team
+                # see if offspring beats out the lowest fitness team
+                if child.fitness > self.teamPool[lowest_index].fitness:
+                    self.teamPool[lowest_index] = child
+            # if teamPool isn't yet filled, just append a team into an available spot to fill it up
             else:
                 self.teamPool.append(child)
 
