@@ -168,6 +168,8 @@ class Team:
             else:
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
                                                                            selected_rule.region[3])
+
+            env.current_state = self.start_state # TODO oop
             # print(sample_start)
             if sample_start != [2, 0] and sample_start != [2, 1] and sample_start != [3, 1] \
                     and sample_start != [1, 3] and sample_start != [2, 3] and sample_start != [3, 3] \
@@ -176,12 +178,14 @@ class Team:
             else:
                 # action = random.randint(0, 3)
                 # known bug, for now just throw out the results...
+                print('dud' )
                 return False
 
         # print(f'Sample start: {sample_start}')
 
         env.current_state = (sample_start[0], sample_start[1])
 
+        env.current_state = self.start_state # TODO will I replace this for the stuff above?... depends if we want sampling or not
         # print(f'Start: {env.current_state}')
         # init region
         reward = 0
@@ -315,17 +319,17 @@ class Team:
 
         # clipping (to leave room for orthogonal action)
         if not terminate:
-            if (action == 0 or action == 2) and region[3] <= 4 and (region[2] - region[3] != 0):
+            if (action == 0 or action == 2) and region[3] > 0 and (region[2] - region[3] != 0):
                 region[3] -= 1
-            elif (action == 1 or action == 3) and region[2] >= 0 and (region[2] - region[3] != 0):
+            elif (action == 1 or action == 3) and region[2] < 4 and (region[2] - region[3] != 0):
                 region[2] += 1
 
         # need to clip updated_parent if backtrack is true
         if backTrack:
-            if (action == 0 or action == 2) and updated_parent.region[3] <= 4 and \
+            if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
                     (updated_parent.region[2] - updated_parent.region[3] != 0):
                 updated_parent.region[3] -= 1
-            elif (action == 1 or action == 3) and updated_parent.region[2] >= 0 and \
+            elif (action == 1 or action == 3) and updated_parent.region[2] < 4 and \
                     (updated_parent.region[2] - updated_parent.region[3] != 0):
                 updated_parent.region[2] += 1
 
