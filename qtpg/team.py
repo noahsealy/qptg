@@ -329,6 +329,10 @@ class Team:
                 fitness += reward
                 break
 
+        # set the start_state for the next rule to where the last rule left off
+        # todo I think this needs to be before clipping
+        self.start_state = env.current_state
+
         # clipping (to leave room for orthogonal action)
         if not terminate:
             if (action == 0 or action == 2) and region[3] > 0 and (region[2] - region[3] != 0):
@@ -337,13 +341,13 @@ class Team:
                 region[2] += 1
 
         # need to clip updated_parent if backtrack is true
-        # if backTrack:
-        #     if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
-        #             (updated_parent.region[2] - updated_parent.region[3] != 0):
-        #         updated_parent.region[3] -= 1
-        #     elif (action == 1 or action == 3) and updated_parent.region[2] < 4 and \
-        #             (updated_parent.region[2] - updated_parent.region[3] != 0):
-        #         updated_parent.region[2] += 1
+        if backTrack:
+            if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
+                    (updated_parent.region[2] - updated_parent.region[3] != 0):
+                updated_parent.region[3] -= 1
+            elif (action == 1 or action == 3) and updated_parent.region[2] < 4 and \
+                    (updated_parent.region[2] - updated_parent.region[3] != 0):
+                updated_parent.region[2] += 1
 
         # update the parent's region in the team's learners if backtracking is true
         # need to do this before updating mostRecent
@@ -361,8 +365,7 @@ class Team:
         self.fitness += rule.fitness
         # set most recent to the rule that was just created
         self.mostRecent = learner
-        # set the start_state for the next rule to where the last rule left off
-        self.start_state = env.current_state
+
         #
         # if backTrack:
         #     print(f'resulting updated parent: {updated_parent.region}')
