@@ -225,7 +225,7 @@ class Team:
         # for backtracking, we need to ensure it is out of the zone when it gets a negative reward
         backTrackLimit = 0
         while (reward >= 0 or (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action))) \
-                and backTrackLimit < 5:
+                and backTrackLimit < 10:
             backTrackLimit += 1
             # while reward >= 0:
             # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
@@ -303,20 +303,18 @@ class Team:
             elif action == 1:
                 # region bound is decreasing, so set the lower bound to current state
                 region[2] = env.current_state[0]
-                # region[3] = env.current_state[0]
             elif action == 2:
                 region[3] = env.current_state[1]
             elif action == 3:
                 # region bound is decreasing
                 region[2] = env.current_state[1]
-                # region[3] = env.current_state[1]
             fitness += reward
 
             state, reward, terminate = env.step(action)
 
             if terminate:
                 print('win!')
-                if action == 0 or action == 2:
+                if action == 0:
                     region[3] = env.current_state[0]
                 # region[2] will take on the current state, because the region bound is decreasing here
                 elif action == 1:
@@ -360,6 +358,8 @@ class Team:
         rule = Rule(uuid.uuid4(), region, action, fitness)
         learner = Learner(uuid.uuid4(), rule)
         # add that rule to the teams learners
+        # todo will probably need to have some sort of learner competition function when we have limited learners per team
+        # todo or add to a learner pool which new teams sample from...
         self.learners.append(learner)
         # add the rule's fitness to the team's overall fitness
         self.fitness += rule.fitness
