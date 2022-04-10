@@ -132,6 +132,64 @@ class Team:
         # return top_rule, top_fitness
         return top_rule
 
+    # allows us to seed learners
+    def init_search(self, env, action):
+        fitness = 0
+        reward = 0
+        region = [0, 0, 0, 0]
+        if action == 0:
+            region[0] = 1
+            region[1] = env.current_state[1]
+            region[2] = env.current_state[0]
+            # region[3] = env.current_state[]
+        elif action == 1:
+            region[0] = 1
+            region[1] = env.current_state[1]
+            # the action is south, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            # region[2] = env.current_state[0]
+            region[3] = env.current_state[0]
+        elif action == 2:
+            region[0] = 0
+            region[1] = env.current_state[0]
+            region[2] = env.current_state[1]
+            # region[3] = env.current_state[1]
+        elif action == 3:
+            region[0] = 0
+            region[1] = env.current_state[0]
+            # the action is west, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            # region[2] = env.current_state[1]
+            region[3] = env.current_state[1]
+
+        while reward >= 0:
+            env.step(action)
+            # track region
+            if action == 0:
+                region[3] = env.current_state[0]
+            elif action == 1:
+                # region bound is decreasing, so set the lower bound to current state
+                region[2] = env.current_state[0]
+            elif action == 2:
+                region[3] = env.current_state[1]
+            elif action == 3:
+                # region bound is decreasing
+                region[2] = env.current_state[1]
+            fitness += reward
+
+            state, reward, terminate = env.step(action)
+
+        rule = Rule(uuid.uuid4(), region, action, fitness)
+        learner = Learner(uuid.uuid4(), rule)
+        # add that rule to the teams learners
+        # todo will probably need to have some sort of learner competition function when we have limited learners per team
+        # todo or add to a learner pool which new teams sample from...
+        self.learners.append(learner)
+        # add the rule's fitness to the team's overall fitness
+        self.fitness += rule.fitness
+        # set most recent to the rule that was just created
+        self.mostRecent = learner
+
     def search(self, env):
         selected_rule = self.mostRecent.program.rule
         # print('new search:--------------------------------')
@@ -163,13 +221,13 @@ class Team:
             elif (action == 1 or action == 3) and selected_rule.region[2] > 0:
                 # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2] - 1,
                 #                                                            selected_rule.region[3])
-                sample_start[not selected_rule.region[0]] = selected_rule.region[2]-1
+                sample_start[not selected_rule.region[0]] = selected_rule.region[2] - 1
             # covers sampling for outskirt cells, as we can not add or subtract from those
             else:
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
                                                                            selected_rule.region[3])
 
-            env.current_state = self.start_state # TODO oop
+            env.current_state = self.start_state  # TODO oop
             # print(sample_start)
             if sample_start != [2, 0] and sample_start != [2, 1] and sample_start != [3, 1] \
                     and sample_start != [1, 3] and sample_start != [2, 3] and sample_start != [3, 3] \
@@ -178,14 +236,14 @@ class Team:
             else:
                 # action = random.randint(0, 3)
                 # known bug, for now just throw out the results...
-                print('dud' )
+                print('dud')
                 return False
 
         # print(f'Sample start: {sample_start}')
 
         env.current_state = (sample_start[0], sample_start[1])
 
-        env.current_state = self.start_state # TODO will I replace this for the stuff above?... depends if we want sampling or not
+        env.current_state = self.start_state  # TODO will I replace this for the stuff above?... depends if we want sampling or not
         # print(f'Start: {env.current_state}')
         # init region
         reward = 0
@@ -241,6 +299,7 @@ class Team:
                     # backtrack the region bound, we add here as it is always a lower bound
                     if updated_parent.region[2] < 4:
                         backTrackedLowerBound = updated_parent.region[2] + 1
+                        print(f'Backtrackregioncehck: {updated_parent.region}')
                         # updated_parent.region[2] = updated_parent.region[2] + 1
                     if updated_parent.region[0] == 1:
                         # update the env state
@@ -270,6 +329,7 @@ class Team:
                     if updated_parent.region[3] > 0:
                         # updated_parent.region[3] = updated_parent.region[3] - 1
                         backTrackedUpperBound = updated_parent.region[3] - 1
+                        print(f'Backtrackregioncehck: {updated_parent.region}')
                     # correct the position of the agent, tuples are immutable...
                     if updated_parent.region[0] == 1:
                         # soon, this will be replaced by just having the searcher step into the env
@@ -403,10 +463,10 @@ class Team:
         # the action should be able to start in the clipped part (... that's the whole point of clipping)
         # it's safe here to assume the region is not out of bounds
         if (action == 0 or action == 2) and child_position[parent_region[0]] == parent_region[1] and \
-                parent_region[2] <= child_position[not parent_region[0]] <= (parent_region[3]+1):
+                parent_region[2] <= child_position[not parent_region[0]] <= (parent_region[3] + 1):
             return True
         if (action == 1 or action == 3) and child_position[parent_region[0]] == parent_region[1] and \
-                (parent_region[2]-1) <= child_position[not parent_region[0]] <= parent_region[3]:
+                (parent_region[2] - 1) <= child_position[not parent_region[0]] <= parent_region[3]:
             return True
         return False
         # if child_position[parent_region[0]] == parent_region[1] and \
