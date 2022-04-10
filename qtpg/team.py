@@ -163,7 +163,6 @@ class Team:
             region[3] = env.current_state[1]
 
         while reward >= 0:
-            env.step(action)
             # track region
             if action == 0:
                 region[3] = env.current_state[0]
