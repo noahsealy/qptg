@@ -135,14 +135,21 @@ class Team:
     def search(self, env):
         selected_rule = self.mostRecent.program.rule
         # print('new search:--------------------------------')
-        action = 0
-        if selected_rule.action_set == 0 or selected_rule.action_set == 1:
-            action = random.randint(2, 3)
-            # action = 2
-        elif selected_rule.action_set == 2 or selected_rule.action_set == 3:
-            action = random.randint(0, 1)
-        # print(f'parent action :{selected_rule.action_set}')
-        # print(f'child action :{action}')
+        # action = 0
+        # if selected_rule.action_set == 0 or selected_rule.action_set == 1:
+        #     action = random.randint(2, 3)
+        # elif selected_rule.action_set == 2 or selected_rule.action_set == 3:
+        #     action = random.randint(0, 1)
+
+        action_set = []
+        if selected_rule.action_set[0] == 0 and selected_rule.action_set[1] == 1: # if north and south, set to east and west
+            action_set = [2, 3]
+        else: # if it was east and west, set to north and south
+            action_set = [0, 1]
+
+        # sample which action goes first
+        action = action_set[random.randint(0, 1)]
+
         # sample start within the region
         # we use current state instead of the max region because the max gets clipped from orthogonal backtracking
         sample_start = [0, 0]
@@ -169,7 +176,7 @@ class Team:
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
                                                                            selected_rule.region[3])
 
-            env.current_state = self.start_state # TODO oop
+            env.current_state = self.start_state # TODO oop, remove when we reintroduce start sampling
             # print(sample_start)
             if sample_start != [2, 0] and sample_start != [2, 1] and sample_start != [3, 1] \
                     and sample_start != [1, 3] and sample_start != [2, 3] and sample_start != [3, 3] \
@@ -181,7 +188,7 @@ class Team:
                 print('dud' )
                 return False
 
-        # print(f'Sample start: {sample_start}')
+        print(f'Sample start: {sample_start}')
 
         env.current_state = (sample_start[0], sample_start[1])
 
@@ -223,11 +230,23 @@ class Team:
         updated_parent = copy.deepcopy(selected_rule)
 
         # for backtracking, we need to ensure it is out of the zone when it gets a negative reward
-        backTrackLimit = 0
-        while (reward >= 0 or (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action))) \
+        backTrackLimit = 0 # todo replace with repeat penalty?
+        flip = 0
+        while ((reward >= 0 and flip < len(action_set)) or
+               (reward < 0 and flip < len(action_set) and not backTrack) or
+               (reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action))) \
                 and backTrackLimit < 10:
             backTrackLimit += 1
-            # while reward >= 0:
+            if reward < 0 and not self.in_parent_region(updated_parent.region, env.current_state, action):
+                flip += 1
+                if flip == len(action_set): # don't love this, but need a way to pull it out of the loop...
+                    break
+                else:
+                    # flip the action
+                    for i in range(len(action_set)):
+                        if action != action_set[i]:
+                            action = action_set[i]
+
             # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
             if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action):
                 backTrack = True
@@ -355,7 +374,8 @@ class Team:
                     self.learners[i].program.rule.region = updated_parent.region
 
         # construct the learner holding the new rule
-        rule = Rule(uuid.uuid4(), region, action, fitness)
+        # rule = Rule(uuid.uuid4(), region, action, fitness)
+        rule = Rule(uuid.uuid4(), region, action_set, fitness)
         learner = Learner(uuid.uuid4(), rule)
         # add that rule to the teams learners
         # todo will probably need to have some sort of learner competition function when we have limited learners per team
