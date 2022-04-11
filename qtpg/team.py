@@ -20,9 +20,9 @@ class Team:
         self.max_rules = max_rules
 
         #### team competition variables start ####
-        self.mostRecent = 0  # TODO this isn't being set anywhere
-        self.fitness = 0  # TODO this isn't being set anywhere
-        self.start_state = (0, 0)  # TODO this isn't being set anywhere
+        self.mostRecent = 0
+        self.fitness = 0
+        self.start_state = (0, 0)
         #### team competition variables end ####
 
     def createInitLearners(self):
@@ -133,10 +133,14 @@ class Team:
         return top_rule
 
     # allows us to seed learners
-    def init_search(self, env, action):
+    def init_search(self, env, action_set):
+
+        action = action_set[random.randint(0, 1)]
+
         fitness = 0
         reward = 0
         region = [0, 0, 0, 0]
+        flip = 0
         if action == 0:
             region[0] = 1
             region[1] = env.current_state[1]
@@ -162,7 +166,21 @@ class Team:
             # region[2] = env.current_state[1]
             region[3] = env.current_state[1]
 
-        while reward >= 0:
+        while reward >= 0 or (reward < 0 and flip < len(action_set)):
+            print('new step-------')
+            print(action)
+            print(env.current_state)
+            if reward < 0:
+                flip += 1
+                if flip == len(action_set):  # don't love this, but need a way to pull it out of the loop...
+                    break
+                else:
+                    # flip the action
+                    new_action = 0
+                    for i in range(len(action_set)):
+                        if action != action_set[i]:
+                            new_action = action_set[i]
+                    action = new_action
             # track region
             if action == 0:
                 region[3] = env.current_state[0]
@@ -177,17 +195,13 @@ class Team:
             fitness += reward
 
             state, reward, terminate = env.step(action)
-
-        rule = Rule(uuid.uuid4(), region, action, fitness)
+        print(region)
+        rule = Rule(uuid.uuid4(), region, action_set, fitness)
         learner = Learner(uuid.uuid4(), rule)
-        # add that rule to the teams learners
-        # todo will probably need to have some sort of learner competition function when we have limited learners per team
-        # todo or add to a learner pool which new teams sample from...
         self.learners.append(learner)
-        # add the rule's fitness to the team's overall fitness
         self.fitness += rule.fitness
-        # set most recent to the rule that was just created
         self.mostRecent = learner
+        self.start_state = env.current_state
 
     def search(self, env):
         selected_rule = self.mostRecent.program.rule
@@ -199,9 +213,9 @@ class Team:
         #     action = random.randint(0, 1)
 
         action_set = []
-        if selected_rule.action_set[0] == 0 and selected_rule.action_set[1] == 1: # if north and south, set to east and west
+        if selected_rule.action_set[0] == 0 and selected_rule.action_set[1] == 1:  # if north and south, set to east and west
             action_set = [2, 3]
-        else: # if it was east and west, set to north and south
+        else:  # if it was east and west, set to north and south
             action_set = [0, 1]
 
         # sample which action goes first
@@ -246,12 +260,13 @@ class Team:
                 print('dud')
                 return False
 
-        print(f'Sample start: {sample_start}')
+        # print(f'Sample start: {sample_start}')
 
         env.current_state = (sample_start[0], sample_start[1])
 
         env.current_state = self.start_state  # TODO will I replace this for the stuff above?... depends if we want sampling or not
-        # print(f'Start: {env.current_state}')
+        print(f'Start: {env.current_state}')
+
         # init region
         reward = 0
         region = [0, 0, 0, 0]
@@ -301,9 +316,11 @@ class Team:
                     break
                 else:
                     # flip the action
+                    new_action = 0
                     for i in range(len(action_set)):
                         if action != action_set[i]:
-                            action = action_set[i]
+                            new_action = action_set[i]
+                    action = new_action
 
             # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
             if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action):
@@ -390,6 +407,9 @@ class Team:
             fitness += reward
 
             state, reward, terminate = env.step(action)
+            print('New real step: ')
+            print(action)
+            print(state)
 
             if terminate:
                 print('win!')
