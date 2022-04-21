@@ -8,6 +8,8 @@ class Learner:
         # self.action = action
         # self.program = Program(uuid.uuid4(), 5)
         self.program = Program(uuid.uuid4(), rule)
+        self.action = None
+        self.fitness = 0
 
     def bid(self, state):
         # self.program.reroll()

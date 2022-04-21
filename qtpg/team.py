@@ -213,7 +213,8 @@ class Team:
         #     action = random.randint(0, 1)
 
         action_set = []
-        if selected_rule.action_set[0] == 0 and selected_rule.action_set[1] == 1:  # if north and south, set to east and west
+        if selected_rule.action_set[0] == 0 and selected_rule.action_set[
+            1] == 1:  # if north and south, set to east and west
             action_set = [2, 3]
         else:  # if it was east and west, set to north and south
             action_set = [0, 1]
@@ -247,7 +248,7 @@ class Team:
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
                                                                            selected_rule.region[3])
 
-            env.current_state = self.start_state # TODO oop, remove when we reintroduce start sampling
+            env.current_state = self.start_state  # TODO oop, remove when we reintroduce start sampling
 
             # print(sample_start)
             if sample_start != [2, 0] and sample_start != [2, 1] and sample_start != [3, 1] \
@@ -303,7 +304,7 @@ class Team:
         updated_parent = copy.deepcopy(selected_rule)
 
         # for backtracking, we need to ensure it is out of the zone when it gets a negative reward
-        backTrackLimit = 0 # todo replace with repeat penalty?
+        backTrackLimit = 0  # todo replace with repeat penalty?
         flip = 0
         while ((reward >= 0 and flip < len(action_set)) or
                (reward < 0 and flip < len(action_set) and not backTrack) or
@@ -312,7 +313,7 @@ class Team:
             backTrackLimit += 1
             if reward < 0 and not self.in_parent_region(updated_parent.region, env.current_state, action):
                 flip += 1
-                if flip == len(action_set): # don't love this, but need a way to pull it out of the loop...
+                if flip == len(action_set):  # don't love this, but need a way to pull it out of the loop...
                     break
                 else:
                     # flip the action
@@ -514,6 +515,76 @@ class Team:
         #     return True
         # return False
 
+    # implement this later for the illegal checks...
+    def check_illegal(self, env, action):
+        test = copy.deepcopy(env)
+        test.memory_repeat = 0.0
+        _, reward, _ = test.step(action)
+        if reward < 0:
+            return True
+        return False
+
     ##############################
     # Region search stuff ends
+    ##############################
+
+    # the in-betweeen....
+
+    ##############################
+    # Q After Search stuff starts
+    ##############################
+
+    def q_evaluation(self, env):
+        eligible_learners = []
+        # find which regions are in that state
+        for learner in self.learners:
+            if self.state_within_region(env.current_state, learner.program.rule.region):
+                eligible_learners.append(learner)
+
+        for learner in eligible_learners:
+            print(learner.program.rule.region)
+        # randomly pick one
+        selected_learner = eligible_learners[random.randint(0, len(eligible_learners) - 1)]
+
+        # go until transition is found
+        win = False
+        action = 0
+
+        while self.state_within_region(env.current_state, selected_learner.program.rule.region):
+
+            # use e-greedy to parse through, assigning q-values to the actions as we go
+            action = selected_learner.program.rule.e_greedy()
+            # go until transition is found
+            state, reward, win = env.step(action)
+
+            # assign reward to the action
+            # TODO, this might suffice as the final update
+            for i in range(len(selected_learner.program.rule.action_set)):
+                if action == selected_learner.program.rule.action_set[i]:
+                    selected_learner.program.rule.value_set[i] += reward
+
+            # if we've won, break out of this...
+            if win:
+                break
+        # when we find transition, the learner's action becomes the action
+        print(f'Winning action: {action}')
+        selected_learner.action = action
+
+        fitness = 0
+        for q in selected_learner.program.rule.value_set:
+            fitness += q
+        selected_learner.fitness = fitness
+        # TODO, add final q update
+        if win:
+            print('win!')
+
+        return win
+
+    def state_within_region(self, state, region):
+        if state[region[0]] == region[1] and region[2] <= state[not region[0]] <= region[3]:
+            return True
+        return False
+
+    ##############################
+    # Q After Search stuff ends
     ##############################
