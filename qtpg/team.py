@@ -534,7 +534,11 @@ class Team:
     # Q After Search stuff starts
     ##############################
 
-    def q_evaluation(self, env):
+    # selects a learner to q_evaluate who has a region that the current state is within
+    # this needs to be a separate function than q_evaluation as we need it to select the t+1 learner (see transition_update function below)
+    # so we eval 'learner', then select 'learner+1' from the state 'learner' left off, and use 'learner+1' as the MAX(q(l+1, a)) for 'learner''s q-update
+    # this ordering of these functions is very important!
+    def select_learner(self, env):
         eligible_learners = []
         # find which regions are in that state
         for learner in self.learners:
@@ -545,11 +549,19 @@ class Team:
             print(learner.program.rule.region)
         # randomly pick one
         selected_learner = eligible_learners[random.randint(0, len(eligible_learners) - 1)]
+        return selected_learner
 
+    # just used to check if a state is in a learner's region
+    def state_within_region(self, state, region):
+        if state[region[0]] == region[1] and region[2] <= state[not region[0]] <= region[3]:
+            return True
+        return False
+
+    def q_evaluation(self, env, selected_learner):
         # go until transition is found
         win = False
         action = 0
-
+        reward = 0
         while self.state_within_region(env.current_state, selected_learner.program.rule.region):
 
             # use e-greedy to parse through, assigning q-values to the actions as we go
@@ -557,33 +569,34 @@ class Team:
             # go until transition is found
             state, reward, win = env.step(action)
 
-            # assign reward to the action
-            # TODO, this might suffice as the final update
-            for i in range(len(selected_learner.program.rule.action_set)):
-                if action == selected_learner.program.rule.action_set[i]:
-                    selected_learner.program.rule.value_set[i] += reward
-
-            # if we've won, break out of this...
             if win:
                 break
         # when we find transition, the learner's action becomes the action
         print(f'Winning action: {action}')
-        selected_learner.action = action
 
-        fitness = 0
-        for q in selected_learner.program.rule.value_set:
-            fitness += q
-        selected_learner.fitness = fitness
-        # TODO, add final q update
         if win:
             print('win!')
 
-        return win
+        return win, selected_learner, reward, action
 
-    def state_within_region(self, state, region):
-        if state[region[0]] == region[1] and region[2] <= state[not region[0]] <= region[3]:
-            return True
-        return False
+    # typical q-update
+    # needs to be called AFTER transition so we know which the learner for the next region is
+    def transition_update(self, reward, winning_action, learner_t, learner_t_plus_one):
+        # find MAX(q(l+1, a))
+        max_plus_one_q = max(learner_t_plus_one.program.rule.value_set)
+
+        # assign the winning learner the action of one reward
+        for i in range(len(learner_t.program.rule.action_set)):
+            if learner_t.program.rule.action_set[i] == winning_action:
+                learner_t.program.rule.value_set[i] += self.alpha * (reward + self.discount * max_plus_one_q - learner_t.program.rule.value_set[i])
+
+    # special q-update for when we win
+    # MAX(q(l+1, a)) is simply set to zero, as there is no 't+1' learner
+    def final_update(self, reward, winning_action, winning_learner):
+        # assign the winning learner the action of one reward
+        for i in range(len(winning_learner.program.rule.action_set)):
+            if winning_learner.program.rule.action_set[i] == winning_action:
+                winning_learner.program.rule.value_set[i] += self.alpha * (reward - winning_learner.program.rule.value_set[i])
 
     ##############################
     # Q After Search stuff ends
