@@ -343,9 +343,7 @@ class Team:
                         # new_state = (updated_parent.region[2], env.current_state[1])
                         new_state = (backTrackedLowerBound, env.current_state[1])
                         # print(f'new state --> {new_state}')
-                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
-                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
-                                new_state != (1, 4)):
+                        if env.check_legal(new_state):
                             updated_parent.region[2] = backTrackedLowerBound
                             env.current_state = new_state
                             region[1] = env.current_state[0]
@@ -353,9 +351,7 @@ class Team:
                         # new_state = (env.current_state[0], updated_parent.region[2])
                         new_state = (env.current_state[0], backTrackedLowerBound)
                         # print(f'new state --> {new_state}')
-                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
-                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
-                                new_state != (1, 4)):
+                        if env.check_legal(new_state):
                             updated_parent.region[2] = backTrackedLowerBound
                             env.current_state = new_state
                             region[1] = env.current_state[1]
@@ -374,9 +370,7 @@ class Team:
                         # new_state = (updated_parent.region[3], env.current_state[1])
                         new_state = (backTrackedUpperBound, env.current_state[1])
                         # print(f'new state --> {new_state}')
-                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
-                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
-                                new_state != (1, 4)):
+                        if env.check_legal(new_state):
                             updated_parent.region[3] = backTrackedUpperBound
                             env.current_state = new_state
                             region[1] = env.current_state[0]
@@ -385,9 +379,8 @@ class Team:
                         # new_state = (env.current_state[0], updated_parent.region[3])
                         new_state = (env.current_state[0], backTrackedUpperBound)
                         # print(f'new state --> {new_state}')
-                        if (new_state != (2, 0)) and (new_state != (2, 1)) and (new_state != (3, 1)) and (
-                                new_state != (1, 3)) and (new_state != (2, 3)) and (new_state != (3, 3)) and (
-                                new_state != (1, 4)):
+
+                        if env.check_legal(new_state):
                             updated_parent.region[3] = backTrackedUpperBound
                             env.current_state = new_state
                             region[1] = env.current_state[1]
@@ -514,15 +507,6 @@ class Team:
         #         (parent_region[2] <= child_position[not parent_region[0]] <= parent_region[3]):
         #     return True
         # return False
-
-    # implement this later for the illegal checks...
-    def check_illegal(self, env, action):
-        test = copy.deepcopy(env)
-        test.memory_repeat = 0.0
-        _, reward, _ = test.step(action)
-        if reward < 0:
-            return True
-        return False
 
     ##############################
     # Region search stuff ends
