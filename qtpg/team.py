@@ -213,8 +213,7 @@ class Team:
         #     action = random.randint(0, 1)
 
         action_set = []
-        if selected_rule.action_set[0] == 0 and selected_rule.action_set[
-            1] == 1:  # if north and south, set to east and west
+        if selected_rule.action_set[0] == 0 and selected_rule.action_set[1] == 1:  # if north south, set to east west
             action_set = [2, 3]
         else:  # if it was east and west, set to north and south
             action_set = [0, 1]
@@ -232,40 +231,78 @@ class Team:
         illegal = True
         # reject all illegal cells with this while loop
         # print(f'Selected region: {selected_rule.region}')
+
+        # sample a legal starting state
         while illegal:
-            # north and east start sampling
-            if (action == 0 or action == 2) and selected_rule.region[3] < 4:
-                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-                #                                                            selected_rule.region[3] + 1)
-                sample_start[not selected_rule.region[0]] = selected_rule.region[3] + 1
-            # south and west start sampling
-            elif (action == 1 or action == 3) and selected_rule.region[2] > 0:
-                # sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2] - 1,
-                #                                                            selected_rule.region[3])
-                sample_start[not selected_rule.region[0]] = selected_rule.region[2] - 1
-            # covers sampling for outskirt cells, as we can not add or subtract from those
-            else:
-                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
-                                                                           selected_rule.region[3])
-
-            env.current_state = self.start_state  # TODO oop, remove when we reintroduce start sampling
-
-            # print(sample_start)
-            if sample_start != [2, 0] and sample_start != [2, 1] and sample_start != [3, 1] \
-                    and sample_start != [1, 3] and sample_start != [2, 3] and sample_start != [3, 3] \
-                    and sample_start != [1, 4]:
+            sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2], selected_rule.region[3])
+            if env.check_legal(sample_start):
                 illegal = False
-            else:
-                # action = random.randint(0, 3)
-                # known bug, for now just throw out the results...
-                print('dud')
-                return False
+
+        # now insert the child region by clipping the parent region
+        if sample_start[not selected_rule.region[0]] == 4:
+            selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+        elif sample_start[not selected_rule.region[0]] == 0:
+            selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
+        else:
+            after_clip = copy.deepcopy(selected_rule)
+            selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+            after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
+            after_clip_learner = Learner(uuid.uuid4(), after_clip)
+            self.learners.append(after_clip_learner)
+
+        # todo everything in this while illegal: loop is old clipping
+        # while illegal:
+        #     # north and east start sampling
+        #     if (action == 0 or action == 2) and selected_rule.region[3] < 4:
+        #         sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
+        #                                                                    selected_rule.region[3] + 1)
+        #         # sample_start[not selected_rule.region[0]] = selected_rule.region[3] + 1
+        #         # clip the parent region to end right where the sample picks up
+        #         # if sample_start[not selected_rule.region[0]] > 0: #TODO find a way to handle these bounds
+        #         selected_rule.region[3] = sample_start[not selected_rule.region[0]]-1
+        #
+        #         if sample_start[not selected_rule.region[0]] < 4:
+        #             # second learner produced by this needs to be actually written in
+        #             clipped_after = copy.deepcopy(selected_rule)
+        #             clipped_after.region[2] = sample_start[not selected_rule.region[0]]+1
+        #             clipped_rule = Rule(uuid.uuid4(), clipped_after.region, clipped_after.action_set, clipped_after.fitness)
+        #             clipped = Learner(uuid.uuid4(), clipped_rule)
+        #             self.learners.append(clipped)
+        #     # south and west start sampling
+        #     elif (action == 1 or action == 3) and selected_rule.region[2] > 0:
+        #         sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2] - 1,
+        #                                                                    selected_rule.region[3])
+        #         # sample_start[not selected_rule.region[0]] = selected_rule.region[2] - 1
+        #         # clip the parent region to end right where the sample picks up
+        #         if sample_start[not selected_rule.region[0]] > 0:
+        #             selected_rule.region[3] = sample_start[not selected_rule.region[0]]-1 # used to be [2]
+        #
+        #         if sample_start[not selected_rule.region[0]] < 4:
+        #             # second learner produced by this needs to be actually written in
+        #             clipped_after = copy.deepcopy(selected_rule)
+        #             clipped_after.region[2] = sample_start[not selected_rule.region[0]]+1
+        #             clipped_rule = Rule(uuid.uuid4(), clipped_after.region, clipped_after.action_set, clipped_after.fitness)
+        #             clipped = Learner(uuid.uuid4(), clipped_rule)
+        #             self.learners.append(clipped)
+        #     # covers sampling for outskirt cells, as we can not add or subtract from those
+        #     else:
+        #         sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2],
+        #                                                                    selected_rule.region[3])
+        #
+        #
+        #     if env.check_legal(sample_start):
+        #         illegal = False
+        #     else:
+        #         # action = random.randint(0, 3)
+        #         # known bug, for now just throw out the results...
+        #         print('dud')
+        #         return False
 
         # print(f'Sample start: {sample_start}')
 
         env.current_state = (sample_start[0], sample_start[1])
 
-        env.current_state = self.start_state  # TODO will I replace this for the stuff above?... depends if we want sampling or not
+        # env.current_state = self.start_state  # TODO will I replace this for the stuff above?... depends if we want sampling or not
         print(f'Start: {env.current_state}')
 
         # init region
@@ -425,11 +462,12 @@ class Team:
         self.start_state = env.current_state
 
         # clipping (to leave room for orthogonal action)
-        if not terminate:
-            if (action == 0 or action == 2) and region[3] > 0 and (region[2] - region[3] != 0):
-                region[3] -= 1
-            elif (action == 1 or action == 3) and region[2] < 4 and (region[2] - region[3] != 0):
-                region[2] += 1
+        # TODO clipping was moved to occur on insertion, we'll still keep clipping on backtrack as that's kinda different
+        # if not terminate:
+        #     if (action == 0 or action == 2) and region[3] > 0 and (region[2] - region[3] != 0):
+        #         region[3] -= 1
+        #     elif (action == 1 or action == 3) and region[2] < 4 and (region[2] - region[3] != 0):
+        #         region[2] += 1
 
         # need to clip updated_parent if backtrack is true
         if backTrack:
