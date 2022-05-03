@@ -32,6 +32,13 @@ class Figure9:
             return True
         return False
 
+    def check_legal(self, state):
+        if (state != (4, 2)) and (state != (4, 3)) and (state != (4, 4)) and (state != (4, 5)) and (state != (3, 5)) and \
+                (state != (2, 5)) and (state != (1, 5)) and (state != (0, 5)) and (state != (6, 6)) and (state != (7, 6)) and\
+                (state != (8, 6)) and (state != (3, 8)) and (state != (4, 8)) and (state != (5, 8)) and (state != (5, 9)):
+            return True
+        return False
+
     def step(self, action):
         # north
         if action == 0:

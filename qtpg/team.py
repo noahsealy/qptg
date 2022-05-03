@@ -239,7 +239,7 @@ class Team:
                 illegal = False
 
         # now insert the child region by clipping the parent region
-        if sample_start[not selected_rule.region[0]] == 4:
+        if sample_start[not selected_rule.region[0]] == env.rows-1: #4:
             selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
         elif sample_start[not selected_rule.region[0]] == 0:
             selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
@@ -371,7 +371,7 @@ class Team:
                 # if env.current_state[not updated_parent.region[0]] == updated_parent.region[2]:
                 if action == 1 or action == 3:
                     # backtrack the region bound, we add here as it is always a lower bound
-                    if updated_parent.region[2] < 4:
+                    if updated_parent.region[2] < env.rows-1:#4:
                         backTrackedLowerBound = updated_parent.region[2] + 1
                         print(f'Backtrackregioncehck: {updated_parent.region}')
                         # updated_parent.region[2] = updated_parent.region[2] + 1
@@ -474,7 +474,7 @@ class Team:
             if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
                     (updated_parent.region[2] - updated_parent.region[3] != 0):
                 updated_parent.region[3] -= 1
-            elif (action == 1 or action == 3) and updated_parent.region[2] < 4 and \
+            elif (action == 1 or action == 3) and updated_parent.region[2] < env.rows-1 and \
                     (updated_parent.region[2] - updated_parent.region[3] != 0):
                 updated_parent.region[2] += 1
 
