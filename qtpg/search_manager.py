@@ -12,22 +12,23 @@ class SearchManager:
 
         if win:
             self.winners.append(child)
+            # self.teamPool.append(child)
+        # else:
+        # if teamPool is filled up, teams compete based on fitness
+        if len(self.teamPool) == self.maxTeamPoolSize:
+            lowest_fitness = 10000
+            lowest_index = 0
+            for i in range(len(self.teamPool)):
+                # find lowest fitness out of rule pool
+                if self.teamPool[i].fitness < lowest_fitness:
+                    lowest_fitness = self.teamPool[i].fitness
+                    lowest_index = i
+            # see if offspring beats out the lowest fitness team
+            if child.fitness > self.teamPool[lowest_index].fitness:
+                self.teamPool[lowest_index] = child
+        # if teamPool isn't yet filled, just append a team into an available spot to fill it up
         else:
-            # if teamPool is filled up, teams compete based on fitness
-            if len(self.teamPool) == self.maxTeamPoolSize:
-                lowest_fitness = 10000
-                lowest_index = 0
-                for i in range(len(self.teamPool)):
-                    # find lowest fitness out of rule pool
-                    if self.teamPool[i].fitness < lowest_fitness:
-                        lowest_fitness = self.teamPool[i].fitness
-                        lowest_index = i
-                # see if offspring beats out the lowest fitness team
-                if child.fitness > self.teamPool[lowest_index].fitness:
-                    self.teamPool[lowest_index] = child
-            # if teamPool isn't yet filled, just append a team into an available spot to fill it up
-            else:
-                self.teamPool.append(child)
+            self.teamPool.append(child)
 
     def start_state(self, child):
         if child.action == 0:
