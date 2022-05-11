@@ -303,7 +303,7 @@ class Team:
         env.current_state = (sample_start[0], sample_start[1])
 
         # env.current_state = self.start_state  # TODO will I replace this for the stuff above?... depends if we want sampling or not
-        print(f'Start: {env.current_state}')
+        # print(f'Start: {env.current_state}')
 
         # init region
         reward = 0
@@ -373,7 +373,7 @@ class Team:
                     # backtrack the region bound, we add here as it is always a lower bound
                     if updated_parent.region[2] < env.rows-1:#4:
                         backTrackedLowerBound = updated_parent.region[2] + 1
-                        print(f'Backtrackregioncehck: {updated_parent.region}')
+                        # print(f'Backtrackregioncehck: {updated_parent.region}')
                         # updated_parent.region[2] = updated_parent.region[2] + 1
                     if updated_parent.region[0] == 1:
                         # update the env state
@@ -399,7 +399,7 @@ class Team:
                     if updated_parent.region[3] > 0:
                         # updated_parent.region[3] = updated_parent.region[3] - 1
                         backTrackedUpperBound = updated_parent.region[3] - 1
-                        print(f'Backtrackregioncehck: {updated_parent.region}')
+                        # print(f'Backtrackregioncehck: {updated_parent.region}')
                     # correct the position of the agent, tuples are immutable...
                     if updated_parent.region[0] == 1:
                         # soon, this will be replaced by just having the searcher step into the env
@@ -438,12 +438,12 @@ class Team:
             fitness += reward
 
             state, reward, terminate = env.step(action)
-            print('New real step: ')
-            print(action)
-            print(state)
+            # print('New real step: ')
+            # print(action)
+            # print(state)
 
             if terminate:
-                print('win!')
+                # print('win!')
                 if action == 0:
                     region[3] = env.current_state[0]
                 # region[2] will take on the current state, because the region bound is decreasing here
