@@ -205,6 +205,12 @@ class Team:
 
     def search(self, env):
         selected_rule = self.mostRecent.program.rule
+
+        # try starting from a random region...? replacing ^...
+        # random_region = random.randint(0, len(self.learners)-1)
+        # selected_rule = self.learners[random_region].program.rule
+        # print(selected_rule.region)
+
         # print('new search:--------------------------------')
         # action = 0
         # if selected_rule.action_set == 0 or selected_rule.action_set == 1:
@@ -234,21 +240,110 @@ class Team:
 
         # sample a legal starting state
         while illegal:
-            sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2], selected_rule.region[3])
+            if (selected_rule.region[3] - selected_rule.region[2]) == 0:
+                sample_start[not selected_rule.region[0]] = selected_rule.region[2]
+            else:
+                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2], selected_rule.region[3])
             if env.check_legal(sample_start):
                 illegal = False
 
-        # now insert the child region by clipping the parent region
-        if sample_start[not selected_rule.region[0]] == env.rows-1: #4:
-            selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
-        elif sample_start[not selected_rule.region[0]] == 0:
-            selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
-        else:
-            after_clip = copy.deepcopy(selected_rule)
-            selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
-            after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
-            after_clip_learner = Learner(uuid.uuid4(), after_clip)
-            self.learners.append(after_clip_learner)
+        # # clipping is not needed if region[2] == region[3], there's no space for clipping to occur
+        # if selected_rule.region[3] > selected_rule.region[2]:
+        #     # now insert the child region by clipping the parent region
+        #     if sample_start[not selected_rule.region[0]] == env.rows-1:
+        #         selected_rule.region[2] = sample_start[not selected_rule.region[0]] - 1
+        #         selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+        #         if selected_rule.region[3] < selected_rule.region[2]:
+        #             print(f'first HEYYYYY --> {sample_start}, {selected_rule.region}')
+        #     elif sample_start[not selected_rule.region[0]] == 0:
+        #         selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
+        #         selected_rule.region[3] = sample_start[not selected_rule.region[0]] + 1
+        #         if selected_rule.region[3] < selected_rule.region[2]:
+        #             print(f'second HEYYYYY --> {sample_start}, {selected_rule.region}')
+        #     else:
+        #         print(f'sample start --> {sample_start}')
+        #         print(f'to be clipped --> {selected_rule.region}')
+        #         after_clip = copy.deepcopy(selected_rule)
+        #         # bit of a hacky solution
+        #         if selected_rule.region[2] < sample_start[not selected_rule.region[0]] - 1:
+        #             selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+        #         # we need this in the case of the sample start being region[2] of the original rule
+        #         # if that would happen without this case, region[3] would be one less than region[2]
+        #         else:
+        #             selected_rule.region[3] = sample_start[not selected_rule.region[0]]
+        #
+        #         if selected_rule.region[3] > sample_start[not selected_rule.region[0]] + 1:
+        #             after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
+        #         # we need this in the case of the sample start being region[3] of the original rule
+        #         # if that would happen without this case, region[2] would be one greater than region[3]
+        #         else:
+        #             after_clip.region[2] = sample_start[not selected_rule.region[0]]
+        #
+        #         after_clip_learner = Learner(uuid.uuid4(), after_clip)
+        #         self.learners.append(after_clip_learner)
+        #         print(f'clipping produced --> {selected_rule.region} and {after_clip.region}')
+        # else:
+        #     print('HEYYYYYYYYYY')
+        #     print(selected_rule.region)
+        #
+
+        # if selected_rule.region[3] >= selected_rule.region[2]:
+        #     # now insert the child region by clipping the parent region
+        #     if sample_start[not selected_rule.region[0]] == env.rows-1: #4:
+        #         selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+        #         if selected_rule.region[3] < selected_rule.region[2]:
+        #         #     selected_rule.region[2] = sample_start[not selected_rule.region[0]] - 1
+        #             print(f'first HEYYYYY --> {sample_start}, {selected_rule.region}')
+        #     elif sample_start[not selected_rule.region[0]] == 0:
+        #         selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
+        #         if selected_rule.region[3] < selected_rule.region[2]:
+        #             # selected_rule.region[3] = sample_start[not selected_rule.region[0]] + 1
+        #             print(f'second HEYYYYY --> {sample_start}, {selected_rule.region}')
+        #     else:
+        #         print(selected_rule.region)
+        #         after_clip = copy.deepcopy(selected_rule)
+        #         # if sample_start[not selected_rule.region[0]] - 1 >= selected_rule.region[2]:
+        #         selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+        #         # else:
+        #         #     selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+        #         #     selected_rule.region[2] = selected_rule.region[2]-1
+        #
+        #         # if sample_start[not selected_rule.region[0]] + 1 <= after_clip.region[3]:
+        #         after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
+        #         # else:
+        #         #     after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
+        #         #     after_clip.region[3] = after_clip.region[3]+1
+        #
+        #         after_clip_learner = Learner(uuid.uuid4(), after_clip)
+        #         self.learners.append(after_clip_learner)
+        #         print(f'clipping produced --> {selected_rule.region} and {after_clip.region}')
+        # else:
+        #     print('eek!')
+
+        if selected_rule.region[2] != selected_rule.region[3]:
+            if sample_start[not selected_rule.region[0]] == env.rows-1:
+                selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+                print(f'clipping produced --> {selected_rule.region}')
+            elif sample_start[not selected_rule.region[0]] == 0:
+                selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
+                print(f'clipping produced --> {selected_rule.region}')
+            else:
+                if sample_start[not selected_rule.region[0]] == selected_rule.region[3]:
+                    selected_rule.region[3] = selected_rule.region[3] - 1
+                    print(f'clipping produced --> {selected_rule.region}')
+                elif sample_start[not selected_rule.region[0]] == selected_rule.region[2]:
+                    selected_rule.region[2] = selected_rule.region[2] + 1
+                    print(f'clipping produced --> {selected_rule.region}')
+                else:
+                    after_clip = copy.deepcopy(selected_rule)
+                    selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+                    after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
+                    after_clip_learner = Learner(uuid.uuid4(), after_clip)
+                    self.learners.append(after_clip_learner)
+                    print(f'clipping produced --> {selected_rule.region} and {after_clip.region}')
+
+
+
 
         # todo everything in this while illegal: loop is old clipping
         # while illegal:
@@ -362,6 +457,7 @@ class Team:
 
             # if the team is within the region of the previous rule, we need to backtrack (and not set a region)
             if reward < 0 and self.in_parent_region(updated_parent.region, env.current_state, action):
+                print('backTrack!')
                 backTrack = True
                 backTrackedLowerBound = 0
                 backTrackedUpperBound = 0
@@ -438,6 +534,7 @@ class Team:
             fitness += reward
 
             state, reward, terminate = env.step(action)
+            print(f'New state for {self.id} --> {state}')
             # print('New real step: ')
             # print(action)
             # print(state)
@@ -470,13 +567,14 @@ class Team:
         #         region[2] += 1
 
         # need to clip updated_parent if backtrack is true
-        if backTrack:
-            if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
-                    (updated_parent.region[2] - updated_parent.region[3] != 0):
-                updated_parent.region[3] -= 1
-            elif (action == 1 or action == 3) and updated_parent.region[2] < env.rows-1 and \
-                    (updated_parent.region[2] - updated_parent.region[3] != 0):
-                updated_parent.region[2] += 1
+        ## TODO just removed this
+        # if backTrack:
+        #     if (action == 0 or action == 2) and updated_parent.region[3] > 0 and \
+        #             (updated_parent.region[2] - updated_parent.region[3] != 0):
+        #         updated_parent.region[3] -= 1
+        #     elif (action == 1 or action == 3) and updated_parent.region[2] < env.rows-1 and \
+        #             (updated_parent.region[2] - updated_parent.region[3] != 0):
+        #         updated_parent.region[2] += 1
 
         # update the parent's region in the team's learners if backtracking is true
         # need to do this before updating mostRecent
@@ -489,6 +587,7 @@ class Team:
         # rule = Rule(uuid.uuid4(), region, action, fitness)
         rule = Rule(uuid.uuid4(), region, action_set, fitness)
         learner = Learner(uuid.uuid4(), rule)
+        print(region)
         # add that rule to the teams learners
         # todo will probably need to have some sort of learner competition function when we have limited learners per team
         # todo or add to a learner pool which new teams sample from...
@@ -546,6 +645,154 @@ class Team:
         #     return True
         # return False
 
+
+
+    def search_no_back_track(self, env):
+        selected_rule = self.mostRecent.program.rule
+
+        action_set = []
+        if selected_rule.action_set[0] == 0 and selected_rule.action_set[1] == 1:  # if north south, set to east west
+            action_set = [2, 3]
+        else:  # if it was east and west, set to north and south
+            action_set = [0, 1]
+
+        # sample which action goes first
+        action = action_set[random.randint(0, 1)]
+
+        # sample start within the region
+        # we use current state instead of the max region because the max gets clipped from orthogonal backtracking
+        sample_start = [0, 0]
+
+        # assign the non-moving space to the non-moving coord
+        sample_start[selected_rule.region[0]] = selected_rule.region[1]
+
+        illegal = True
+
+        # sample a legal starting state
+        while illegal:
+            if (selected_rule.region[3] - selected_rule.region[2]) == 0:
+                sample_start[not selected_rule.region[0]] = selected_rule.region[2]
+            else:
+                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2], selected_rule.region[3])
+            if env.check_legal(sample_start):
+                illegal = False
+
+        if selected_rule.region[2] != selected_rule.region[3]:
+            if sample_start[not selected_rule.region[0]] == env.rows-1:
+                selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+                print(f'clipping produced --> {selected_rule.region}')
+            elif sample_start[not selected_rule.region[0]] == 0:
+                selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
+                print(f'clipping produced --> {selected_rule.region}')
+            else:
+                if sample_start[not selected_rule.region[0]] == selected_rule.region[3]:
+                    selected_rule.region[3] = selected_rule.region[3] - 1
+                    print(f'clipping produced --> {selected_rule.region}')
+                elif sample_start[not selected_rule.region[0]] == selected_rule.region[2]:
+                    selected_rule.region[2] = selected_rule.region[2] + 1
+                    print(f'clipping produced --> {selected_rule.region}')
+                else:
+                    after_clip = copy.deepcopy(selected_rule)
+                    selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
+                    after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
+                    after_clip_learner = Learner(uuid.uuid4(), after_clip)
+                    self.learners.append(after_clip_learner)
+                    print(f'clipping produced --> {selected_rule.region} and {after_clip.region}')
+
+        env.current_state = (sample_start[0], sample_start[1])
+
+        # init region
+        reward = 0
+        region = [0, 0, 0, 0]
+        if action == 0:
+            region[0] = 1
+            region[1] = env.current_state[1]
+            region[2] = env.current_state[0]
+        elif action == 1:
+            region[0] = 1
+            region[1] = env.current_state[1]
+            # the action is south, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            # region[2] = env.current_state[0]
+            region[3] = env.current_state[0]
+        elif action == 2:
+            region[0] = 0
+            region[1] = env.current_state[0]
+            region[2] = env.current_state[1]
+        elif action == 3:
+            region[0] = 0
+            region[1] = env.current_state[0]
+            # the action is west, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            region[3] = env.current_state[1]
+
+        fitness = 0
+        # search region
+        terminate = False
+
+        flip = 0
+        while (reward >= 0 and flip < len(action_set)) or (reward < 0 and flip < len(action_set)):
+
+            # only way this was let in if reward is negative but flip is not done
+            if reward < 0:
+                flip += 1
+                if flip == len(action_set):  # don't love this, but need a way to pull it out of the loop...
+                    break
+                else:
+                    # flip the action
+                    new_action = 0
+                    for i in range(len(action_set)):
+                        if action != action_set[i]:
+                            new_action = action_set[i]
+                    action = new_action
+
+            # track region
+            if action == 0:
+                region[3] = env.current_state[0]
+            elif action == 1:
+                # region bound is decreasing, so set the lower bound to current state
+                region[2] = env.current_state[0]
+            elif action == 2:
+                region[3] = env.current_state[1]
+            elif action == 3:
+                # region bound is decreasing
+                region[2] = env.current_state[1]
+            fitness += reward
+
+            state, reward, terminate = env.step(action)
+            print(f'New state for {self.id} --> {state}')
+
+            if terminate:
+                # print('win!')
+                if action == 0:
+                    region[3] = env.current_state[0]
+                # region[2] will take on the current state, because the region bound is decreasing here
+                elif action == 1:
+                    region[2] = env.current_state[0]
+                elif action == 2:
+                    region[3] = env.current_state[1]
+                # also decreasing here...
+                elif action == 3:
+                    region[2] = env.current_state[1]
+                fitness += reward
+                break
+
+        # set the start_state for the next rule to where the last rule left off
+        self.start_state = env.current_state
+
+        # construct the learner holding the new rule
+        rule = Rule(uuid.uuid4(), region, action_set, fitness)
+        learner = Learner(uuid.uuid4(), rule)
+        print(region)
+        # add that rule to the teams learners
+        self.learners.append(learner)
+        # add the rule's fitness to the team's overall fitness
+        self.fitness += rule.fitness
+        # set most recent to the rule that was just created
+        self.mostRecent = learner
+
+        return terminate
+
     ##############################
     # Region search stuff ends
     ##############################
@@ -560,17 +807,31 @@ class Team:
     # this needs to be a separate function than q_evaluation as we need it to select the t+1 learner (see transition_update function below)
     # so we eval 'learner', then select 'learner+1' from the state 'learner' left off, and use 'learner+1' as the MAX(q(l+1, a)) for 'learner''s q-update
     # this ordering of these functions is very important!
-    def select_learner(self, env):
+    def select_learner(self, env, selected_region):
         eligible_learners = []
         # find which regions are in that state
         for learner in self.learners:
-            if self.state_within_region(env.current_state, learner.program.rule.region):
+            if self.state_within_region(env.current_state, learner.program.rule.region) and learner.program.rule.region != selected_region:
+                print(f'regions --> {selected_region} is eligible with {learner.program.rule.region}')
                 eligible_learners.append(learner)
+        if len(eligible_learners) == 0:
+            print('oh no!')
 
         for learner in eligible_learners:
-            print(learner.program.rule.region)
+            print(f'{learner.program.rule.region} --> {learner.program.rule.action_set}')
+
+        if len(eligible_learners) == 0:
+            print('eek!')
+            print(env.current_state)
+            for learner in self.learners:
+                print(learner.program.rule.region)
+
+
         # randomly pick one
-        selected_learner = eligible_learners[random.randint(0, len(eligible_learners) - 1)]
+        if len(eligible_learners) >= 1:
+            selected_learner = eligible_learners[random.randint(0, len(eligible_learners) - 1)]
+        else: # need this safety check in case eligible_learners only have one learner
+            selected_learner = eligible_learners[0]
         return selected_learner
 
     # just used to check if a state is in a learner's region
@@ -590,7 +851,14 @@ class Team:
             action = selected_learner.program.rule.e_greedy()
             # go until transition is found
             state, reward, win = env.step(action)
-
+            # for i in range(len(selected_learner.program.rule.action_set)):
+            #     if action == selected_learner.program.rule.action_set[i]:
+            #         selected_learner.program.rule.value_set[i] += reward
+            print(selected_learner.program.rule.region)
+            print(selected_learner.program.rule.action_set)
+            print(selected_learner.program.rule.value_set)
+            print(action)
+            print(state)
             if win:
                 break
         # when we find transition, the learner's action becomes the action
