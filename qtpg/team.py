@@ -167,9 +167,9 @@ class Team:
             region[3] = env.current_state[1]
 
         while reward >= 0 or (reward < 0 and flip < len(action_set)):
-            print('new step-------')
-            print(action)
-            print(env.current_state)
+            # print('new step-------')
+            # print(action)
+            # print(env.current_state)
             if reward < 0:
                 flip += 1
                 if flip == len(action_set):  # don't love this, but need a way to pull it out of the loop...
@@ -195,7 +195,7 @@ class Team:
             fitness += reward
 
             state, reward, terminate = env.step(action)
-        print(region)
+        # print(region)
         rule = Rule(uuid.uuid4(), region, action_set, fitness)
         learner = Learner(uuid.uuid4(), rule)
         self.learners.append(learner)
@@ -680,24 +680,24 @@ class Team:
         if selected_rule.region[2] != selected_rule.region[3]:
             if sample_start[not selected_rule.region[0]] == env.rows-1:
                 selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
-                print(f'clipping produced --> {selected_rule.region}')
+                # print(f'clipping produced --> {selected_rule.region}')
             elif sample_start[not selected_rule.region[0]] == 0:
                 selected_rule.region[2] = sample_start[not selected_rule.region[0]] + 1
-                print(f'clipping produced --> {selected_rule.region}')
+                # print(f'clipping produced --> {selected_rule.region}')
             else:
                 if sample_start[not selected_rule.region[0]] == selected_rule.region[3]:
                     selected_rule.region[3] = selected_rule.region[3] - 1
-                    print(f'clipping produced --> {selected_rule.region}')
+                    # print(f'clipping produced --> {selected_rule.region}')
                 elif sample_start[not selected_rule.region[0]] == selected_rule.region[2]:
                     selected_rule.region[2] = selected_rule.region[2] + 1
-                    print(f'clipping produced --> {selected_rule.region}')
+                    # print(f'clipping produced --> {selected_rule.region}')
                 else:
                     after_clip = copy.deepcopy(selected_rule)
                     selected_rule.region[3] = sample_start[not selected_rule.region[0]] - 1
                     after_clip.region[2] = sample_start[not selected_rule.region[0]] + 1
                     after_clip_learner = Learner(uuid.uuid4(), after_clip)
                     self.learners.append(after_clip_learner)
-                    print(f'clipping produced --> {selected_rule.region} and {after_clip.region}')
+                    # print(f'clipping produced --> {selected_rule.region} and {after_clip.region}')
 
         env.current_state = (sample_start[0], sample_start[1])
 
@@ -760,7 +760,7 @@ class Team:
             fitness += reward
 
             state, reward, terminate = env.step(action)
-            print(f'New state for {self.id} --> {state}')
+            # print(f'New state for {self.id} --> {state}')
 
             if terminate:
                 # print('win!')
@@ -783,7 +783,7 @@ class Team:
         # construct the learner holding the new rule
         rule = Rule(uuid.uuid4(), region, action_set, fitness)
         learner = Learner(uuid.uuid4(), rule)
-        print(region)
+        # print(region)
         # add that rule to the teams learners
         self.learners.append(learner)
         # add the rule's fitness to the team's overall fitness
