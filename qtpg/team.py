@@ -793,6 +793,177 @@ class Team:
 
         return terminate
 
+    def goal_start_search(self, env):
+        selected_rule = self.mostRecent.program.rule
+
+        action_set = []
+        if selected_rule.action_set[0] == 0 and selected_rule.action_set[1] == 1:  # if north south, set to east west
+            action_set = [2, 3]
+        else:  # if it was east and west, set to north and south
+            action_set = [0, 1]
+
+        # sample which action goes first
+        action = action_set[random.randint(0, 1)]
+
+        # sample start within the region
+        # we use current state instead of the max region because the max gets clipped from orthogonal backtracking
+        sample_start = [0, 0]
+
+        # assign the non-moving space to the non-moving coord
+        sample_start[selected_rule.region[0]] = selected_rule.region[1]
+
+        illegal = True
+
+        # sample a legal starting state
+        while illegal:
+            if (selected_rule.region[3] - selected_rule.region[2]) == 0:
+                sample_start[not selected_rule.region[0]] = selected_rule.region[2]
+            else:
+                sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2], selected_rule.region[3])
+            if env.check_legal(sample_start):
+                illegal = False
+
+        env.current_state = (sample_start[0], sample_start[1])
+
+        # init region
+        reward = 0
+        region = [0, 0, 0, 0]
+        if action == 0:
+            region[0] = 1
+            region[1] = env.current_state[1]
+            region[2] = env.current_state[0]
+        elif action == 1:
+            region[0] = 1
+            region[1] = env.current_state[1]
+            # the action is south, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            # region[2] = env.current_state[0]
+            region[3] = env.current_state[0]
+        elif action == 2:
+            region[0] = 0
+            region[1] = env.current_state[0]
+            region[2] = env.current_state[1]
+        elif action == 3:
+            region[0] = 0
+            region[1] = env.current_state[0]
+            # the action is west, so the current state will always be decreasing
+            # thus, set the upper region bound to the current state
+            region[3] = env.current_state[1]
+
+        fitness = 0
+        # search region
+        terminate = False
+
+        flip = 0
+        while (reward >= 0 and flip < len(action_set)) or (reward < 0 and flip < len(action_set)):
+
+            # only way this was let in if reward is negative but flip is not done
+            if reward < 0:
+                flip += 1
+                if flip == len(action_set):  # don't love this, but need a way to pull it out of the loop...
+                    break
+                else:
+                    # flip the action
+                    new_action = 0
+                    for i in range(len(action_set)):
+                        if action != action_set[i]:
+                            new_action = action_set[i]
+                    action = new_action
+
+            # track region
+            if action == 0:
+                region[3] = env.current_state[0]
+            elif action == 1:
+                # region bound is decreasing, so set the lower bound to current state
+                region[2] = env.current_state[0]
+            elif action == 2:
+                region[3] = env.current_state[1]
+            elif action == 3:
+                # region bound is decreasing
+                region[2] = env.current_state[1]
+            fitness += reward
+
+            state, reward, terminate = env.step(action)
+            # print(f'New state for {self.id} --> {state}')
+
+            if terminate:
+                # print('win!')
+                if action == 0:
+                    region[3] = env.current_state[0]
+                # region[2] will take on the current state, because the region bound is decreasing here
+                elif action == 1:
+                    region[2] = env.current_state[0]
+                elif action == 2:
+                    region[3] = env.current_state[1]
+                # also decreasing here...
+                elif action == 3:
+                    region[2] = env.current_state[1]
+                fitness += reward
+                break
+
+        # GOAL START CHILD CLIPPING
+        # after the child region is fully developed, find it's intersection with the parent region,
+        # and remove that state from the child region
+
+        # find intersection between parent and child
+            # between selected_rule.region and region
+
+        # intersect has to be the sample start
+        intersect = sample_start
+
+        # deconstruct the region into coords
+        child_states = []
+        for i in range(region[2], region[3] + 1):
+            coord = [0, 0]
+            coord[region[0]] = region[1]
+            coord[not region[0]] = i
+            child_states.append(coord)
+
+        # find the intersect and remove it from the list of coords
+        pop_index = 0
+        found = False
+        for n in range(len(child_states)):
+            if child_states[n] == intersect and not found:
+                found = True
+                pop_index = n
+        if found:
+            child_states.pop(pop_index)
+        else:
+            return []
+
+        # reconstruct the child region, it comes out as a list
+        # use a list as there may be more than one regions if clipping occurred in the middle
+        clipped_child_regions = []
+        child = [region[0], region[1], region[2], 0]
+        for i in range(len(child_states)):
+            if i > 0:
+                if not child_states[i][not region[0]] - 1 == child_states[i - 1][not region[0]]:
+                    clipped_child_regions.append(child)
+                    child = [region[0], region[1], i + 1, i + 1]
+                else:
+                    child[3] = child[3] + 1
+        clipped_child_regions.append(child)
+
+
+        # set the start_state for the next rule to where the last rule left off
+        self.start_state = env.current_state
+
+
+        for clipped_child_region in clipped_child_regions:
+            # construct the learner holding the new rule
+            # rule = Rule(uuid.uuid4(), region, action_set, fitness)
+            rule = Rule(uuid.uuid4(), clipped_child_region, action_set, fitness)
+            learner = Learner(uuid.uuid4(), rule)
+            # print(region)
+            # add that rule to the teams learners
+            self.learners.append(learner)
+            # add the rule's fitness to the team's overall fitness
+            self.fitness += rule.fitness
+            # set most recent to the rule that was just created
+            self.mostRecent = learner
+
+        return terminate
+
     ##############################
     # Region search stuff ends
     ##############################
@@ -802,6 +973,30 @@ class Team:
     ##############################
     # Q After Search stuff starts
     ##############################
+
+    def prune_single_cell_regions(self):
+        print('PRUNING SINGLE CELL REGIONS!')
+        print(len(self.learners))
+        pruned = []
+        for learner in self.learners:
+            if learner.program.rule.region[2] != learner.program.rule.region[3]:
+                pruned.append(learner)
+        self.learners = pruned
+        print(len(self.learners))
+
+    def prune_duplicate_regions(self):
+        print('PRUNING DUPLICATES!')
+        print(len(self.learners))
+
+        index = 0
+        for learner in self.learners:
+            index = 0
+            for duplicate_search in self.learners:
+                if learner.id != learner.id and learner.program.rule.region == duplicate_search.program.rule.region:
+                    self.learners.pop(index)
+
+        print(len(self.learners))
+
 
     # selects a learner to q_evaluate who has a region that the current state is within
     # this needs to be a separate function than q_evaluation as we need it to select the t+1 learner (see transition_update function below)
@@ -828,10 +1023,11 @@ class Team:
 
 
         # randomly pick one
-        if len(eligible_learners) >= 1:
+        if len(eligible_learners) > 1: # JUST CHANGED THIS FROM >= to >
             selected_learner = eligible_learners[random.randint(0, len(eligible_learners) - 1)]
         else: # need this safety check in case eligible_learners only have one learner
             selected_learner = eligible_learners[0]
+        print(f'we chose --> {selected_learner.program.rule.region}')
         return selected_learner
 
     # just used to check if a state is in a learner's region
