@@ -819,6 +819,7 @@ class Team:
             if (selected_rule.region[3] - selected_rule.region[2]) == 0:
                 sample_start[not selected_rule.region[0]] = selected_rule.region[2]
             else:
+                print(selected_rule.region)
                 sample_start[not selected_rule.region[0]] = random.randint(selected_rule.region[2], selected_rule.region[3])
             if env.check_legal(sample_start):
                 illegal = False
@@ -934,12 +935,14 @@ class Team:
         # reconstruct the child region, it comes out as a list
         # use a list as there may be more than one regions if clipping occurred in the middle
         clipped_child_regions = []
-        child = [region[0], region[1], region[2], 0]
+        # child = [region[0], region[1], region[2], 0]
+        child = [region[0], region[1], region[2], region[2]]
         for i in range(len(child_states)):
             if i > 0:
                 if not child_states[i][not region[0]] - 1 == child_states[i - 1][not region[0]]:
                     clipped_child_regions.append(child)
-                    child = [region[0], region[1], i + 1, i + 1]
+                    # child = [region[0], region[1], i + 1, i + 1]
+                    child = [region[0], region[1], child[2] + 1, child[3] + 1]
                 else:
                     child[3] = child[3] + 1
         clipped_child_regions.append(child)
