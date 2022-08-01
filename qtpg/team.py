@@ -25,6 +25,8 @@ class Team:
         self.start_state = (0, 0)
         #### team competition variables end ####
 
+        self.gp_query_env = 0
+
     def createInitLearners(self):
         for i in range(self.numLearners):
             learner = Learner(uuid.uuid4())
@@ -779,6 +781,11 @@ class Team:
 
         # set the start_state for the next rule to where the last rule left off
         self.start_state = env.current_state
+
+        # query for gp is n+1 where n is region size
+        # region[3] - region[2] will give its size
+        if region[3] - region[2] >= 0:
+            self.gp_query_env += (region[3] - region[2]) + 1
 
         # construct the learner holding the new rule
         rule = Rule(uuid.uuid4(), region, action_set, fitness)
