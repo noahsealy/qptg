@@ -733,6 +733,7 @@ class Team:
         terminate = False
 
         flip = 0
+        step_count = 0
         while (reward >= 0 and flip < len(action_set)) or (reward < 0 and flip < len(action_set)):
 
             # only way this was let in if reward is negative but flip is not done
@@ -760,7 +761,7 @@ class Team:
                 # region bound is decreasing
                 region[2] = env.current_state[1]
             fitness += reward
-
+            step_count += 1
             state, reward, terminate = env.step(action)
             # print(f'New state for {self.id} --> {state}')
 
@@ -782,6 +783,16 @@ class Team:
         # set the start_state for the next rule to where the last rule left off
         self.start_state = env.current_state
 
+        # penalize a 0 step count
+        if step_count == 2 and (region[3] - region[2] == 0): # right...?
+            print('no steps!')
+            fitness += -100
+
+        print('------')
+        print(step_count)
+        print(region)
+        print('------')
+
         # query for gp is n+1 where n is region size
         # region[3] - region[2] will give its size
         if region[3] - region[2] >= 0:
@@ -789,6 +800,7 @@ class Team:
 
         # construct the learner holding the new rule
         rule = Rule(uuid.uuid4(), region, action_set, fitness)
+        print(rule.region)
         learner = Learner(uuid.uuid4(), rule)
         # print(region)
         # add that rule to the teams learners
@@ -990,6 +1002,7 @@ class Team:
         pruned = []
         for learner in self.learners:
             if learner.program.rule.region[2] != learner.program.rule.region[3]:
+                # or (learner.program.rule.region[2] == 0 and learner.program.rule.region[3] == 0):
                 pruned.append(learner)
         self.learners = pruned
         print(len(self.learners))

@@ -12,6 +12,7 @@ class SearchManager:
 
         if win:
             self.winners.append(child)
+            # return # wil this fix it?
             # self.teamPool.append(child)
         # else:
         # if teamPool is filled up, teams compete based on fitness
@@ -36,7 +37,6 @@ class SearchManager:
             start_state[child.latest_rule.region[0]] = child.latest_rule.region[1]
             start_state[not child.latest_rule.region[0]] = child.latest_rule.region[3] + 1
             return (start_state[0], start_state[1])
-
 
     def win(self, child):
         self.winners.append(child)
