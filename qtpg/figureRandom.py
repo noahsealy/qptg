@@ -93,6 +93,15 @@ class FigureRandom:
         print(f'Win State: {self.win_state}')
         print(f'Illegal States: {self.illegal_states}')
 
+        print('matlab code, converted so plus one to everything')
+        print(f'GW.CurrentState = \'[{self.start_state[0]+1},{self.start_state[1]+1}]\';')
+        print(f'GW.TerminalStates = \'[{self.win_state[0]+1},{self.win_state[1]+1}]\';')
+        print('GW.ObstacleStates = [', end='')
+        for illegal in self.illegal_states:
+            print(f'\"[{illegal[0]+1},{illegal[1]+1}]\";', end='')
+        print('];')
+
+        print(self.win_state)
         for n in reversed(range(self.rows)):
             for m in range(self.cols):
                 if (n, m) == self.start_state:
