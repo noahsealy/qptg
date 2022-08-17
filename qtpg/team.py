@@ -1008,8 +1008,8 @@ class Team:
         print(len(self.learners))
 
     def prune_duplicate_regions(self):
-        print('PRUNING DUPLICATES!')
-        print(len(self.learners))
+        # print('PRUNING DUPLICATES!')
+        # print(len(self.learners))
 
         index = 0
         for learner in self.learners:
@@ -1018,7 +1018,7 @@ class Team:
                 if learner.id != learner.id and learner.program.rule.region == duplicate_search.program.rule.region:
                     self.learners.pop(index)
 
-        print(len(self.learners))
+        # print(len(self.learners))
 
 
     # selects a learner to q_evaluate who has a region that the current state is within
@@ -1030,27 +1030,34 @@ class Team:
         # find which regions are in that state
         for learner in self.learners:
             if self.state_within_region(env.current_state, learner.program.rule.region) and learner.program.rule.region != selected_region:
-                print(f'regions --> {selected_region} is eligible with {learner.program.rule.region}')
+                # print(f'regions --> {selected_region} is eligible with {learner.program.rule.region}')
                 eligible_learners.append(learner)
-        if len(eligible_learners) == 0:
-            print('oh no!')
+        # if len(eligible_learners) == 0:
+        #     print('oh no!')
 
         for learner in eligible_learners:
             print(f'{learner.program.rule.region} --> {learner.program.rule.action_set}')
 
-        if len(eligible_learners) == 0:
-            print('eek!')
-            print(env.current_state)
-            for learner in self.learners:
-                print(learner.program.rule.region)
+        # if len(eligible_learners) == 0:
+        #     print('eek!')
+        #     print(env.current_state)
+        #     for learner in self.learners:
+        #         print(learner.program.rule.region)
 
 
-        # randomly pick one
-        if len(eligible_learners) > 1: # JUST CHANGED THIS FROM >= to >
+        # if len(eligible_learners) > 1:
+        #     selected_learner = eligible_learners[random.randint(0, len(eligible_learners) - 1)]
+        # else:
+        #     selected_learner = eligible_learners[0]
+
+        if len(eligible_learners) > 1:
             selected_learner = eligible_learners[random.randint(0, len(eligible_learners) - 1)]
-        else: # need this safety check in case eligible_learners only have one learner
+        elif len(eligible_learners) == 1:
             selected_learner = eligible_learners[0]
-        print(f'we chose --> {selected_learner.program.rule.region}')
+        else:
+            print('eek!')
+            return
+        # print(f'we chose --> {selected_learner.program.rule.region}')
         return selected_learner
 
     # just used to check if a state is in a learner's region
