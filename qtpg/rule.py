@@ -9,6 +9,11 @@ class Rule:
         self.action_set = action_set
         self.value_set = [0, 0]
         self.fitness = fitness
+
+    #     for region.step
+        self.win = None
+
+
     #
     # def region(self):
     #     return self.region
@@ -30,3 +35,36 @@ class Rule:
                         top_index = i
                 selected_action = self.action_set[top_index]
         return selected_action
+
+    def step(self, action, current_state, illegal_states):
+        # north
+        if action == 0:
+            next = (current_state[0] + 1, current_state[1])
+        # south
+        elif action == 1:
+            next = (current_state[0] - 1, current_state[1])
+        # east
+        elif action == 2:
+            next = (current_state[0], current_state[1] + 1)
+        # west
+        else:
+            next = (current_state[0], current_state[1] - 1)
+
+        if -1 < next[0] < 5 and -1 < next[1] < 5 and next not in illegal_states:
+            current_state = next
+
+        # transition = False
+        # if not self.within_region(next):
+        #     transition = False
+
+        win = False
+        if self.win and self.win == current_state:
+            win = True
+
+        # return self.current_state, transition, win
+        return current_state, win
+
+    # def within_region(self, state):
+    #     if state[self.region[0]] == self.region[1] and self.region[2] <= state[not self.region[0]] <= self.region[3]:
+    #         return True
+    #     return False
