@@ -15,6 +15,7 @@ class FigureHeywood:
         self.out_of_bounds = out_of_bounds
         self.memory_repeat = memory_repeat
         self.goal_reached = goal_reached
+        self.illegal_states = [(7, 2), (7, 3), (7, 4), (7, 5), (7, 6), (6, 6), (5, 6), (4, 6), (4, 2), (3, 2), (2, 2), (2, 3), (2, 4), (2, 5), (2, 6)]
 
     def reset(self):
         self.current_state = self.start_state

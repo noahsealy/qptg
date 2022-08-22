@@ -1069,7 +1069,7 @@ class Team:
             return True
         return False
 
-    def q_evaluation(self, current_state, selected_learner, illegal_states):
+    def q_evaluation(self, current_state, selected_learner, illegal_states, dimensions):
         # go until transition is found
         win = False
         action = 0
@@ -1081,7 +1081,7 @@ class Team:
             # go until transition is found
             # state, reward, win = env.step(action)
 
-            current_state, win = selected_learner.program.rule.step(action, current_state, illegal_states)
+            current_state, win = selected_learner.program.rule.step(action, current_state, illegal_states, dimensions)
 
 
             # for i in range(len(selected_learner.program.rule.action_set)):

@@ -15,6 +15,7 @@ class Figure13HoleInWall:
         self.out_of_bounds = out_of_bounds
         self.memory_repeat = memory_repeat
         self.goal_reached = goal_reached
+        self.illegal_states = [(2, 0), (2, 1), (3, 1), (1, 3), (3, 3), (1, 4)]
 
     def reset(self):
         self.current_state = self.start_state

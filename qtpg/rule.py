@@ -21,7 +21,7 @@ class Rule:
     def e_greedy(self):
         if self.value_set == [0, 0]:
             selected_action = self.action_set[random.randint(0, 1)]
-            print(f'value set is 0, action selected --> {selected_action}')
+            # print(f'value set is 0, action selected --> {selected_action}')
         else:
             e_prob = random.uniform(0, 1)
             if e_prob < 0.1:
@@ -36,7 +36,7 @@ class Rule:
                 selected_action = self.action_set[top_index]
         return selected_action
 
-    def step(self, action, current_state, illegal_states):
+    def step(self, action, current_state, illegal_states, dimensions):
         # north
         if action == 0:
             next = (current_state[0] + 1, current_state[1])
@@ -50,7 +50,8 @@ class Rule:
         else:
             next = (current_state[0], current_state[1] - 1)
 
-        if -1 < next[0] < 5 and -1 < next[1] < 5 and next not in illegal_states:
+        # needs to be env.row...
+        if -1 < next[0] < dimensions[0] and -1 < next[1] < dimensions[1] and next not in illegal_states:
             current_state = next
 
         # transition = False

@@ -15,6 +15,7 @@ class Figure9:
         self.out_of_bounds = out_of_bounds
         self.memory_repeat = memory_repeat
         self.goal_reached = goal_reached
+        self.illegal_states = [(4, 2), (4, 3), (4, 4), (4, 5), (3, 5), (2, 5), (1, 5), (0, 5), (6, 6), (7, 6), (8, 6), (3, 8), (4, 8), (5, 8), (5, 9)]
 
     def reset(self):
         self.current_state = self.start_state
