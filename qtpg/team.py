@@ -27,6 +27,8 @@ class Team:
 
         self.gp_query_env = 0
 
+        self.team_spread = []
+
     def createInitLearners(self):
         for i in range(self.numLearners):
             learner = Learner(uuid.uuid4())
@@ -813,6 +815,13 @@ class Team:
         # set most recent to the rule that was just created
         self.mostRecent = learner
 
+        for i in range(region[2], region[3] + 1):
+            coord = [0, 0]
+            coord[region[0]] = region[1]
+            coord[not region[0]] = i
+            if coord not in self.team_spread:
+                self.team_spread.append(coord)
+
         return terminate
 
     def goal_start_search(self, env):
@@ -988,6 +997,9 @@ class Team:
             self.mostRecent = learner
 
         return terminate
+
+    def coverage(self, dimensions):
+        return len(self.team_spread) / (dimensions[0] * dimensions[1])
 
     ##############################
     # Region search stuff ends
