@@ -998,8 +998,8 @@ class Team:
 
         return terminate
 
-    def coverage(self, dimensions):
-        return len(self.team_spread) / (dimensions[0] * dimensions[1])
+    def coverage(self, dimensions, illegal_states):
+        return len(self.team_spread) / ((dimensions[0] * dimensions[1]) - len(illegal_states))
 
     ##############################
     # Region search stuff ends

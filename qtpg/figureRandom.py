@@ -70,7 +70,7 @@ class FigureRandom:
         print('Env saved successfully!')
         print(env_id)
 
-    def load(self, id):
+    def load(self, id, display = True):
         print('Loading env...')
         file_name = f'qtpg/saved_environments/{id}.csv'
         with open(file_name, 'r') as csv_file:
@@ -84,7 +84,8 @@ class FigureRandom:
                 self.illegal_states = eval(row[5])
 
         print('Env loaded successfully!')
-        self.display()
+        if display:
+            self.display()
 
     def display(self):
         print(f'Rows: {self.rows}')
@@ -92,7 +93,6 @@ class FigureRandom:
         print(f'Start State: {self.start_state}')
         print(f'Win State: {self.win_state}')
         print(f'Illegal States: {self.illegal_states}')
-
         print('matlab code, converted so plus one to everything')
         print(f'GW.CurrentState = \'[{(self.rows-1)-self.start_state[0]+1},{self.start_state[1]+1}]\';')
         print(f'GW.TerminalStates = \'[{(self.rows-1)-self.win_state[0]+1},{self.win_state[1]+1}]\';')
