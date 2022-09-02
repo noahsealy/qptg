@@ -1050,8 +1050,8 @@ class Team:
         # if len(eligible_learners) == 0:
         #     print('oh no!')
 
-        for learner in eligible_learners:
-            print(f'{learner.program.rule.region} --> {learner.program.rule.action_set}')
+        # for learner in eligible_learners:
+        #     print(f'{learner.program.rule.region} --> {learner.program.rule.action_set}')
 
         # if len(eligible_learners) == 0:
         #     print('eek!')
@@ -1108,7 +1108,7 @@ class Team:
             if win:
                 break
         # when we find transition, the learner's action becomes the action
-        print(f'Winning action: {action}')
+        # print(f'Winning action: {action}')
 
         if win:
             print('win!')
