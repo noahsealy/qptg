@@ -1096,7 +1096,6 @@ class Team:
             # state, reward, win = env.step(action)
 
             current_state, win = selected_learner.program.rule.step(action, current_state, illegal_states, dimensions)
-            print(f'Step count: {step_count}')
             step_count+=1
 
             # for i in range(len(selected_learner.program.rule.action_set)):
