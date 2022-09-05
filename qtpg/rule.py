@@ -50,7 +50,6 @@ class Rule:
         else:
             next = (current_state[0], current_state[1] - 1)
 
-        # needs to be env.row...
         if -1 < next[0] < dimensions[0] and -1 < next[1] < dimensions[1] and next not in illegal_states:
             current_state = next
 
