@@ -1086,7 +1086,7 @@ class Team:
         win = False
         action = 0
         reward = 0
-        print(current_state)
+        # print(current_state)
         while self.state_within_region(current_state, selected_learner.program.rule.region):
 
             # use e-greedy to parse through, assigning q-values to the actions as we go
