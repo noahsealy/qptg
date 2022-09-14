@@ -1097,6 +1097,8 @@ class Team:
 
             current_state, win = selected_learner.program.rule.step(action, current_state, illegal_states, dimensions)
             step_count+=1
+            if step_count > 1000:
+                break
 
             # for i in range(len(selected_learner.program.rule.action_set)):
             #     if action == selected_learner.program.rule.action_set[i]:
