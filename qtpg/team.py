@@ -1110,6 +1110,7 @@ class Team:
             # print(action)
             # print(state)
             if win:
+                print('step count reached!')
                 break
         # when we find transition, the learner's action becomes the action
         # print(f'Winning action: {action}')
@@ -1119,6 +1120,10 @@ class Team:
             reward = 100
         else:
             reward = 0.01
+
+        if step_count > 1000:
+            print('step count reached return')
+            return False, False, False, False, False
 
         return win, selected_learner, reward, action, current_state
 
