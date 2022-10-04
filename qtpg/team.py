@@ -1110,7 +1110,6 @@ class Team:
             # print(action)
             # print(state)
             if win:
-                print('step count reached!')
                 break
         # when we find transition, the learner's action becomes the action
         # print(f'Winning action: {action}')
