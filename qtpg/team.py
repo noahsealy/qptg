@@ -19,6 +19,8 @@ class Team:
         self.rule_pool.append(Rule(-1, [0, 0, 0, 0], 0, 0))
         self.max_rules = max_rules
 
+        self.gen_created = 0
+
         #### team competition variables start ####
         self.mostRecent = 0
         self.fitness = 0
@@ -28,6 +30,9 @@ class Team:
         self.gp_query_env = 0
 
         self.team_spread = []
+
+        # step stuff...
+        self.total_steps = 0
 
     def createInitLearners(self):
         for i in range(self.numLearners):
@@ -649,8 +654,6 @@ class Team:
         #     return True
         # return False
 
-
-
     def search_no_back_track(self, env):
         selected_rule = self.mostRecent.program.rule
 
@@ -764,8 +767,15 @@ class Team:
                 region[2] = env.current_state[1]
             fitness += reward
             step_count += 1
+
             state, reward, terminate = env.step(action)
             # print(f'New state for {self.id} --> {state}')
+
+            self.total_steps += 1
+            if self.total_steps > 60*env.rows:  # hyperparameter that seems to work
+                fitness += -100
+                # fitness = fitness
+                # print('no')
 
             if terminate:
                 # print('win!')
@@ -779,6 +789,7 @@ class Team:
                 # also decreasing here...
                 elif action == 3:
                     region[2] = env.current_state[1]
+
                 fitness += reward
                 break
 

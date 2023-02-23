@@ -8,7 +8,7 @@ from .rule import Rule
 
 class ResultsManager:
 
-    def save_champions(self, envName, run_winners):
+    def save_champions(self, envName, run_winners, gp_queries, win_loss):
         print('Saving end...')
         save_id = envName
         file_name = f'qtpg/saved_champions/{save_id}.csv'
@@ -18,7 +18,7 @@ class ResultsManager:
             for run in range(len(run_winners)):
                 csv_writer.writerow(['run'])
                 for champ in run_winners[run]['winners']:
-                    csv_writer.writerow(['new champ', champ.id])
+                    csv_writer.writerow(['new champ', champ.id, champ.gen_created])
                     for learner in champ.learners:
                         row = []
                         row.append(learner.id)
@@ -31,6 +31,12 @@ class ResultsManager:
 
         print('Env saved successfully!')
         print(file_name)
+
+        file_name = f'qtpg/saved_champions/query_totals_{save_id}.csv'
+        with open(file_name, 'w') as csv_file:
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow([gp_queries])
+            csv_writer.writerow([win_loss])
 
     def load_champions(self, envName):
         print('Loading champions...')
@@ -54,12 +60,27 @@ class ResultsManager:
                     team = Team(row[1], 0, 0, 0, 0, 0)
                 else:
                     rule = Rule(row[1], eval(row[2]), eval(row[3]), eval(row[5]))
-                    rule.value_set = eval(row[4])
+                    # rule.value_set = eval(row[4])
+                    rule.value_set = [0, 0]
+                    rule.value_set[0] = float(eval(row[4])[0])
+                    rule.value_set[1] = float(eval(row[4])[1])
+                    print(type(rule.value_set[0]))
+                    print(rule.region)
+                    print(rule.fitness)
+                    print(f'region index type: {type(rule.region[0])}')
                     learner = Learner(row[0], rule)
                     team.learners.append(learner)
 
+        query_totals = []
+        with open(f'qtpg/saved_champions/query_totals_{envName}.csv', 'r') as csv_file:
+            totals = csv.reader(csv_file)
+            query_totals = eval(totals[0][0])
+            win_loss = eval(totals[1][0])
+            # for row in totals:
+            #     query_totals = eval(row[0])
+
         print('Champions loaded successfully!')
-        return run_winners
+        return run_winners, query_totals, win_loss
 
     # def load(self, id, display=True):
     #     print('Loading env...')
