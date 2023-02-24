@@ -74,10 +74,15 @@ class ResultsManager:
         query_totals = []
         with open(f'qtpg/saved_champions/query_totals_{envName}.csv', 'r') as csv_file:
             totals = csv.reader(csv_file)
-            query_totals = eval(totals[0][0])
-            win_loss = eval(totals[1][0])
-            # for row in totals:
-            #     query_totals = eval(row[0])
+            # query_totals = eval(totals[0][0])
+            # win_loss = eval(totals[1][0])
+            count = 0
+            for row in totals:
+                if count == 0:
+                    query_totals = eval(row[0])
+                else:
+                    win_loss = eval(row[0])
+                count += 1
 
         print('Champions loaded successfully!')
         return run_winners, query_totals, win_loss
